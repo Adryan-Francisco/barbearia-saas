@@ -1,0 +1,38 @@
+# Dependências
+node_modules/
+package-lock.json
+yarn.lock
+
+# Build
+dist/
+build/
+*.tsbuildinfo
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+
+# Database
+*.db
+*.sqlite
+data/barbearia.json
+
+# Misc
+.cache/
+temp/
+tmp/
