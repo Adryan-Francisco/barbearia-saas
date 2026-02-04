@@ -6,9 +6,9 @@
 
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif;
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
   min-height: 100vh;
-  color: #2c3e50;
+  color: #1e293b;
   line-height: 1.6;
 }
 
@@ -20,7 +20,7 @@ html, body, #root {
 /* Tipografia */
 h1, h2, h3, h4, h5, h6 {
   font-weight: 700;
-  color: #2c3e50;
+  color: #1e293b;
   margin: 0;
 }
 
@@ -111,35 +111,34 @@ p {
 
 /* Scrollbar */
 ::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #f0f2f5;
+  background: #f1f5f9;
   border-radius: 10px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, #6b4c9a, #8b5fbf);
+  background: #cbd5e1;
   border-radius: 10px;
   transition: background 0.3s ease;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, #4a2f6f, #6b4c9a);
+  background: #94a3b8;
 }
 
 /* Links */
 a {
-  color: #6b4c9a;
+  color: #3b82f6;
   text-decoration: none;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
 }
 
 a:hover {
-  color: #8b5fbf;
-  text-decoration: underline;
+  color: #1d4ed8;
 }
 
 /* Input focus */
@@ -170,6 +169,19 @@ input:focus, textarea:focus, select:focus {
 
 .bounce {
   animation: bounce 0.6s ease infinite;
+}
+
+/* Forms */
+input, textarea, select {
+  font-family: inherit;
+}
+
+input::placeholder, textarea::placeholder {
+  color: #94a3b8;
+}
+
+button {
+  font-family: inherit;
 }
 
 /* Responsive */

@@ -104,7 +104,7 @@ export default function Appointments() {
       >
         <div>
           <h2 style={{ margin: '0 0 8px 0', color: colors.dark, fontSize: '32px', fontWeight: '800' }}>
-            📅 Meus Agendamentos
+            Meus Agendamentos
           </h2>
           <p style={{ margin: 0, color: colors.gray, fontSize: '15px', fontWeight: '500' }}>
             Gerencie seus cortes e horários com facilidade
@@ -120,11 +120,11 @@ export default function Appointments() {
         </button>
       </div>
 
-      {error && <div style={errorMessageStyle}>⚠️ {error}</div>}
+      {error && <div style={errorMessageStyle}>Erro: {error}</div>}
 
       {appointments.length === 0 ? (
         <div style={emptyStateStyle} className="fade-in">
-          <div style={{ fontSize: '64px', marginBottom: '16px' }}>✂️</div>
+          <div style={{ fontSize: '64px', marginBottom: '16px' }}></div>
           <h3 style={emptyStateTitleStyle}>Nenhum agendamento ainda</h3>
           <p style={{ color: colors.gray, marginBottom: '24px' }}>
             Clique em "Novo Agendamento" para reservar seu primeiro horário!
@@ -182,7 +182,7 @@ export default function Appointments() {
                     apt.status === 'confirmed' ? badgeSuccessStyle : badgeDangerStyle
                   }
                 >
-                  {apt.status === 'confirmed' ? '✓ Confirmado' : '✕ Cancelado'}
+                  {apt.status === 'confirmed' ? 'Confirmado' : 'Cancelado'}
                 </div>
               </div>
 

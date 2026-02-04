@@ -61,31 +61,37 @@ export default function BarbershopDashboard() {
       setLoading(true);
       setError('');
 
+      console.log('Loading data for barbershop:', barbershop_id, 'date:', selectedDate);
+
       // Carregar estatísticas
       const statsResponse = await fetch(`http://localhost:3001/api/barbershop/${barbershop_id}/stats`);
+      console.log('Stats response:', statsResponse.status, statsResponse.ok);
       if (statsResponse.ok) {
-        setStats(await statsResponse.json());
+        const statsData = await statsResponse.json();
+        console.log('Stats data:', statsData);
+        setStats(statsData);
+      } else {
+        console.error('Stats error:', await statsResponse.text());
       }
 
       // Carregar agendamentos do dia selecionado
       const appointmentsResponse = await fetch(
         `http://localhost:3001/api/barbershop/${barbershop_id}/appointments/${selectedDate}`
       );
+      console.log('Appointments response:', appointmentsResponse.status, appointmentsResponse.ok);
       if (appointmentsResponse.ok) {
         const data = await appointmentsResponse.json();
+        console.log('Appointments data:', data);
         setAppointments(data.appointments);
+      } else {
+        console.error('Appointments error:', await appointmentsResponse.text());
       }
     } catch (err: any) {
-      setError('Erro ao carregar dados');
+      console.error('Load error:', err);
+      setError(err.message || 'Erro ao carregar dados');
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem('barbershop_id');
-    localStorage.removeItem('barbershop_name');
-    navigate('/barbershop/login');
   };
 
   if (!barbershop_id) {
@@ -96,51 +102,16 @@ export default function BarbershopDashboard() {
     <div
       style={{
         minHeight: '100vh',
-        background: `linear-gradient(135deg, ${colors.primary}20 0%, ${colors.primaryLight}20 100%)`,
+        background: `linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)`,
       }}
     >
-      {/* Header */}
-      <div
-        style={{
-          background: `linear-gradient(135deg, ${colors.primary} 0%, ${colors.primaryLight} 100%)`,
-          color: colors.white,
-          padding: '30px 20px',
-          marginBottom: '40px',
-          boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
-        }}
-      >
-        <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div>
-            <h1 style={{ fontSize: '32px', fontWeight: '800', margin: '0 0 8px 0' }}>
-              🏪 {barbershop_name || 'Dashboard'}
-            </h1>
-            <p style={{ fontSize: '15px', opacity: 0.9, margin: 0 }}>
-              Gerencie seus agendamentos em tempo real
-            </p>
-          </div>
-          <button
-            onClick={handleLogout}
-            style={{
-              padding: '10px 20px',
-              backgroundColor: 'rgba(255,255,255,0.2)',
-              color: colors.white,
-              border: '1px solid rgba(255,255,255,0.3)',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              fontWeight: '700',
-              fontSize: '14px',
-              transition: 'all 0.3s ease',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.3)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.2)';
-            }}
-          >
-            🚪 Sair
-          </button>
-        </div>
+      <div style={{ padding: '20px 40px', maxWidth: '1200px', margin: '0 auto' }}>
+        <h1 style={{ fontSize: '28px', fontWeight: '800', margin: '0 0 8px 0', color: '#1e293b' }}>
+          Dashboard de Agendamentos
+        </h1>
+        <p style={{ fontSize: '15px', color: '#64748b', margin: 0, marginBottom: '30px' }}>
+          Gerencie seus agendamentos em tempo real
+        </p>
       </div>
 
       <div style={containerStyle}>
@@ -192,7 +163,7 @@ export default function BarbershopDashboard() {
 
             <div style={{ ...cardStyle, borderLeft: `4px solid #52C41A` }}>
               <p style={{ color: colors.gray, fontSize: '12px', fontWeight: '700', textTransform: 'uppercase', margin: '0 0 8px 0' }}>
-                💰 Lucro Total
+                Lucro Total
               </p>
               <h3 style={{ fontSize: '32px', fontWeight: '800', color: '#52C41A', margin: 0 }}>
                 R$ {(stats.total_revenue || 0).toFixed(2)}
@@ -215,7 +186,7 @@ export default function BarbershopDashboard() {
         >
           <div>
             <label style={{ display: 'block', fontSize: '14px', fontWeight: '700', color: colors.dark, marginBottom: '8px' }}>
-              📅 Selecione uma data
+              Selecione uma data
             </label>
             <input
               type="date"
@@ -234,7 +205,7 @@ export default function BarbershopDashboard() {
           </div>
         </div>
 
-        {error && <div style={errorMessageStyle}>⚠️ {error}</div>}
+        {error && <div style={errorMessageStyle}>Erro: {error}</div>}
 
         {/* Agendamentos */}
         {loading ? (
@@ -304,7 +275,7 @@ export default function BarbershopDashboard() {
                       apt.status === 'confirmed' ? badgeSuccessStyle : badgePrimaryStyle
                     }
                   >
-                    {apt.status === 'confirmed' ? '✓ Confirmado' : '⏳ Pendente'}
+                    {apt.status === 'confirmed' ? 'Confirmado' : 'Pendente'}
                   </div>
                 </div>
 
@@ -318,13 +289,13 @@ export default function BarbershopDashboard() {
                   }}
                 >
                   <p style={{ margin: '0 0 8px 0', fontSize: '13px', color: colors.dark, fontWeight: '700' }}>
-                    👤 {apt.client_name}
+                    {apt.client_name}
                   </p>
                   <p style={{ margin: '0 0 8px 0', fontSize: '13px', color: colors.gray }}>
-                    📱 {apt.client_phone}
+                    {apt.client_phone}
                   </p>
                   <p style={{ margin: 0, fontSize: '13px', color: colors.primary, fontWeight: '700' }}>
-                    💰 R$ {apt.service_price?.toFixed(2)}
+                    R$ {apt.service_price?.toFixed(2)}
                   </p>
                 </div>
 
@@ -340,7 +311,7 @@ export default function BarbershopDashboard() {
                       e.currentTarget.style.transform = 'translateY(0)';
                     }}
                   >
-                    ✓ Confirmar
+                    Confirmar
                   </button>
                 )}
               </div>

@@ -1,15 +1,6 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import styled from 'styled-components';
-import {
-  headerStyle,
-  headerTitleStyle,
-  headerSubtitleStyle,
-  buttonSecondaryStyle,
-  buttonSecondaryHoverStyle,
-  buttonSmallStyle,
-  colors,
-} from '../styles';
 
 const HeaderWrapper = styled.header`
   background: white;
@@ -86,50 +77,66 @@ const LogoutButton = styled.button`
   }
 `;
 
-export default function Header() {
+export default function BarbershopHeader() {
   const navigate = useNavigate();
   const location = useLocation();
-  const user = localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')!) : null;
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const barbershop_name = localStorage.getItem('barbershop_name');
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    navigate('/login');
+    localStorage.removeItem('barbershop_id');
+    localStorage.removeItem('barbershop_name');
+    navigate('/barbershop/login');
   };
 
-  const currentPage = location.pathname === '/appointments' ? 'appointments' : 'new-appointment';
+  const isActive = (path: string) => location.pathname === path;
 
   return (
     <HeaderWrapper>
       <HeaderContent>
-        <Logo onClick={() => navigate('/appointments')}>
-          <div style={{ fontSize: '28px' }}>✂️</div>
+        <Logo onClick={() => navigate('/barbershop-dashboard')}>
           <div>
             <LogoTitle>BarberPro</LogoTitle>
-            {user && <LogoSubtitle>Bem-vindo, {user.name}!</LogoSubtitle>}
+            {barbershop_name && <LogoSubtitle>{barbershop_name}</LogoSubtitle>}
           </div>
         </Logo>
 
         <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
           <Nav>
             <NavLink
-              $active={currentPage === 'appointments'}
-              onClick={() => navigate('/appointments')}
+              $active={isActive('/barbershop-dashboard')}
+              onClick={() => navigate('/barbershop-dashboard')}
             >
-              Agendamentos
+              Dashboard
             </NavLink>
             <NavLink
-              $active={currentPage === 'new-appointment'}
-              onClick={() => navigate('/new-appointment')}
+              $active={isActive('/realtime-dashboard')}
+              onClick={() => navigate('/realtime-dashboard')}
             >
-              Novo Agendamento
+              Tempo Real
             </NavLink>
-            <NavLink onClick={() => navigate('/analytics')}>
+            <NavLink
+              $active={isActive('/analytics')}
+              onClick={() => navigate('/analytics')}
+            >
               Análises
             </NavLink>
-            <NavLink onClick={() => navigate('/payments')}>
+            <NavLink
+              $active={isActive('/charts')}
+              onClick={() => navigate('/charts')}
+            >
+              Gráficos
+            </NavLink>
+            <NavLink
+              $active={isActive('/payments')}
+              onClick={() => navigate('/payments')}
+            >
               Pagamentos
+            </NavLink>
+            <NavLink
+              $active={isActive('/client-history')}
+              onClick={() => navigate('/client-history')}
+            >
+              Histórico
             </NavLink>
           </Nav>
           <LogoutButton onClick={handleLogout}>Sair</LogoutButton>

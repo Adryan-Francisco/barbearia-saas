@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { getDatabase, saveDatabase } from '../utils/database';
 import { AppError } from '../middleware/errorHandler';
 import { sendWhatsAppMessage } from '../services/whatsappService';
+import { websocketService } from '../services/websocketService';
 import { getAvailableSlots, isSlotAvailable } from '../services/schedulingService';
 
 export async function createAppointment(req: Request, res: Response, next: NextFunction) {
@@ -43,6 +44,15 @@ export async function createAppointment(req: Request, res: Response, next: NextF
     });
 
     await saveDatabase();
+
+    // Emitir notificação via WebSocket
+    websocketService.notifyAppointmentConfirmed(barbershop_id, {
+      clientName: client?.name,
+      serviceName: service?.name,
+      date: appointment_date,
+      time: appointment_time,
+      appointmentId: id
+    });
 
     if (barbershop && client && service) {
       const message = `Olá ${client.name}! Seu agendamento foi confirmado!\n\nServiço: ${service.name}\nData: ${appointment_date}\nHorário: ${appointment_time}\n\nObrigado!`;
@@ -108,6 +118,14 @@ export async function cancelAppointment(req: Request, res: Response, next: NextF
     await saveDatabase();
 
     const client = db.users.find((u: any) => u.id === req.user!.id);
+
+    // Emitir notificação via WebSocket
+    websocketService.notifyAppointmentCancelled(appointment.barbershop_id, {
+      clientName: client?.name,
+      date: appointment.appointment_date,
+      time: appointment.appointment_time,
+      appointmentId: appointmentId
+    });
 
     if (client) {
       const message = `Olá ${client.name}! Seu agendamento foi cancelado com sucesso.`;

@@ -6,6 +6,11 @@ import {
   confirmAppointment,
   getBarbershopStats,
 } from '../controllers/barbershopController';
+import {
+  getRealtimeMetricsHandler,
+  getHourlyMetricsHandler,
+  getDailyTrendHandler,
+} from '../controllers/realtimeController';
 
 const router = Router();
 
@@ -23,5 +28,14 @@ router.put('/appointments/:appointment_id/confirm', confirmAppointment);
 
 // Obter estatísticas da barbearia
 router.get('/:barbershop_id/stats', getBarbershopStats);
+
+// Métricas em tempo real
+router.get('/:barbershop_id/realtime-metrics', getRealtimeMetricsHandler);
+
+// Métricas por hora
+router.get('/:barbershop_id/hourly-metrics', getHourlyMetricsHandler);
+
+// Tendência diária
+router.get('/:barbershop_id/daily-trend', getDailyTrendHandler);
 
 export default router;
