@@ -4,6 +4,8 @@ import dotenv from 'dotenv';
 import { createServer } from 'http';
 import { initializeDatabase } from './utils/database';
 import { websocketService } from './services/websocketService';
+import { cacheMiddleware } from './utils/cache';
+import { paginationMiddleware } from './utils/pagination';
 import authRoutes from './routes/authRoutes';
 import schedulingRoutes from './routes/schedulingRoutes';
 import barbershopRoutes from './routes/barbershopRoutes';
@@ -11,6 +13,8 @@ import reviewRoutes from './routes/reviewRoutes';
 import analyticsRoutes from './routes/analyticsRoutes';
 import paymentRoutes from './routes/paymentRoutes';
 import stripeRoutes from './routes/stripeRoutes';
+import favoritesRoutes from './routes/favoritesRoutes';
+import cancellationRoutes from './routes/cancellationRoutes';
 import { errorHandler } from './middleware/errorHandler';
 
 dotenv.config();
@@ -18,10 +22,18 @@ dotenv.config();
 const app = express();
 const httpServer = createServer(app);
 const PORT = process.env.PORT || 3001;
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: FRONTEND_URL,
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}));
 app.use(express.json());
+app.use(paginationMiddleware); // Middleware de paginação
+app.use(cacheMiddleware(5 * 60 * 1000)); // Cache de 5 minutos para GET requests
 
 // Inicializar banco de dados
 initializeDatabase().then(() => {
@@ -41,6 +53,8 @@ app.use('/api/reviews', reviewRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/stripe', stripeRoutes);
+app.use('/api/favorites', favoritesRoutes);
+app.use('/api/cancellations', cancellationRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

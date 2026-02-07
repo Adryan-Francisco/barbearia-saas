@@ -1,0 +1,123 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+  .bg-background {
+    @apply bg-[hsl(var(--background))];
+  }
+  .text-foreground {
+    @apply text-[hsl(var(--foreground))];
+  }
+  .bg-card {
+    @apply bg-[hsl(var(--card))];
+  }
+  .text-card-foreground {
+    @apply text-[hsl(var(--card-foreground))];
+  }
+  .bg-popover {
+    @apply bg-[hsl(var(--popover))];
+  }
+  .text-popover-foreground {
+    @apply text-[hsl(var(--popover-foreground))];
+  }
+  .bg-primary {
+    @apply bg-[hsl(var(--primary))];
+  }
+  .text-primary-foreground {
+    @apply text-[hsl(var(--primary-foreground))];
+  }
+  .bg-secondary {
+    @apply bg-[hsl(var(--secondary))];
+  }
+  .text-secondary-foreground {
+    @apply text-[hsl(var(--secondary-foreground))];
+  }
+  .bg-muted {
+    @apply bg-[hsl(var(--muted))];
+  }
+  .text-muted-foreground {
+    @apply text-[hsl(var(--muted-foreground))];
+  }
+  .bg-accent {
+    @apply bg-[hsl(var(--accent))];
+  }
+  .text-accent-foreground {
+    @apply text-[hsl(var(--accent-foreground))];
+  }
+  .bg-destructive {
+    @apply bg-[hsl(var(--destructive))];
+  }
+  .text-destructive-foreground {
+    @apply text-[hsl(var(--destructive-foreground))];
+  }
+  .border-border {
+    @apply border-[hsl(var(--border))];
+  }
+  .bg-input {
+    @apply bg-[hsl(var(--input))];
+  }
+  .ring-ring {
+    @apply ring-[hsl(var(--ring))];
+  }
+  .ring-offset-background {
+    @apply ring-offset-[hsl(var(--background))];
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+@layer base {
+  :root {
+    --background: 220 20% 7%;
+    --foreground: 40 10% 92%;
+    --card: 220 18% 10%;
+    --card-foreground: 40 10% 92%;
+    --popover: 220 18% 10%;
+    --popover-foreground: 40 10% 92%;
+    --primary: 36 80% 50%;
+    --primary-foreground: 220 20% 7%;
+    --secondary: 220 15% 15%;
+    --secondary-foreground: 40 10% 85%;
+    --muted: 220 15% 13%;
+    --muted-foreground: 220 10% 55%;
+    --accent: 36 80% 50%;
+    --accent-foreground: 220 20% 7%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 220 15% 18%;
+    --input: 220 15% 18%;
+    --ring: 36 80% 50%;
+    --chart-1: 36 80% 50%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 220 60% 50%;
+    --chart-4: 280 55% 55%;
+    --chart-5: 340 65% 50%;
+    --radius: 0.625rem;
+    --sidebar-background: 220 20% 5%;
+    --sidebar-foreground: 40 10% 85%;
+    --sidebar-primary: 36 80% 50%;
+    --sidebar-primary-foreground: 220 20% 7%;
+    --sidebar-accent: 220 15% 12%;
+    --sidebar-accent-foreground: 40 10% 92%;
+    --sidebar-border: 220 15% 15%;
+    --sidebar-ring: 36 80% 50%;
+    --success: 142 71% 45%;
+    --success-foreground: 0 0% 98%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 7%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-[hsl(var(--border))];
+  }
+  body {
+    @apply bg-[hsl(var(--background))] text-[hsl(var(--foreground))];
+  }
+}
