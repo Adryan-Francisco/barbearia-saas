@@ -1,112 +1,112 @@
-import fs from 'fs/promises';
-import path from 'path';
-import { v4 as uuidv4 } from 'uuid';
-
-const dbPath = path.join(__dirname, '../../data/barbearia.json');
-
-interface ClientHistory {
-  id: string;
-  barbershop_id: string;
-  client_id: string;
-  client_name: string;
-  client_phone: string;
-  total_appointments: number;
-  completed_appointments: number;
-  cancelled_appointments: number;
-  total_spent: number;
-  last_appointment_date?: string;
-  created_at: string;
-  updated_at: string;
-}
-
-interface Analytics {
-  id: string;
-  barbershop_id: string;
-  date: string; // YYYY-MM-DD
-  total_appointments: number;
-  completed_appointments: number;
-  cancelled_appointments: number;
-  total_revenue: number;
-  created_at: string;
-}
-
-async function loadDatabase() {
-  const data = await fs.readFile(dbPath, 'utf-8');
-  return JSON.parse(data);
-}
-
-async function saveDatabase(db: any) {
-  await fs.writeFile(dbPath, JSON.stringify(db, null, 2));
-}
+import { prisma } from '../utils/prisma';
 
 // CLIENT HISTORY
 export async function updateClientHistory(
   barbershopId: string,
   clientId: string,
   clientName: string,
-  clientPhone: string,
-  servicePrice: number,
-  status: 'completed' | 'cancelled'
-): Promise<ClientHistory> {
-  const db = await loadDatabase();
-  let history = db.client_history.find(
-    (h: ClientHistory) => h.client_id === clientId && h.barbershop_id === barbershopId
-  );
-
-  if (!history) {
-    history = {
-      id: uuidv4(),
-      barbershop_id: barbershopId,
-      client_id: clientId,
-      client_name: clientName,
-      client_phone: clientPhone,
-      total_appointments: 0,
-      completed_appointments: 0,
-      cancelled_appointments: 0,
-      total_spent: 0,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    };
-    db.client_history.push(history);
-  }
-
-  history.total_appointments += 1;
-  if (status === 'completed') {
-    history.completed_appointments += 1;
-    history.total_spent += servicePrice;
-  } else {
-    history.cancelled_appointments += 1;
-  }
-  history.last_appointment_date = new Date().toISOString();
-  history.updated_at = new Date().toISOString();
-
-  await saveDatabase(db);
-  return history;
+  clientPhone: string
+) {
+  // This is now computed on-the-fly from appointments
+  // The function is kept for compatibility but doesn't persist anything
+  return {
+    barbershop_id: barbershopId,
+    client_id: clientId,
+    client_name: clientName,
+    client_phone: clientPhone,
+  };
 }
 
-export async function getClientHistory(
-  barbershopId: string
-): Promise<ClientHistory[]> {
-  const db = await loadDatabase();
-  return db.client_history
-    .filter((h: ClientHistory) => h.barbershop_id === barbershopId)
-    .sort((a: ClientHistory, b: ClientHistory) => 
-      new Date(b.last_appointment_date || 0).getTime() - 
-      new Date(a.last_appointment_date || 0).getTime()
-    );
+export async function getClientHistory(barbershopId: string) {
+  const appointments = await prisma.appointment.findMany({
+    where: { barbershopId },
+    include: {
+      client: true,
+      service: true
+    }
+  });
+
+  // Group by client and compute stats
+  const clientMap: { [key: string]: any } = {};
+
+  appointments.forEach((apt: any) => {
+    if (!clientMap[apt.clientId]) {
+      clientMap[apt.clientId] = {
+        id: apt.clientId,
+        barbershop_id: barbershopId,
+        client_id: apt.clientId,
+        client_name: apt.client.name,
+        client_phone: apt.client.phone,
+        total_appointments: 0,
+        completed_appointments: 0,
+        cancelled_appointments: 0,
+        total_spent: 0,
+        last_appointment_date: null,
+      };
+    }
+
+    clientMap[apt.clientId].total_appointments += 1;
+    if (apt.status === 'confirmed' || apt.status === 'completed') {
+      clientMap[apt.clientId].completed_appointments += 1;
+      clientMap[apt.clientId].total_spent += apt.service.price;
+    } else if (apt.status === 'cancelled') {
+      clientMap[apt.clientId].cancelled_appointments += 1;
+    }
+    clientMap[apt.clientId].last_appointment_date = apt.appointmentDate;
+  });
+
+  const result = Object.values(clientMap);
+  
+  return result.sort((a: any, b: any) =>
+    (b.last_appointment_date?.getTime() || 0) - (a.last_appointment_date?.getTime() || 0)
+  );
 }
 
 export async function getClientDetail(
   barbershopId: string,
   clientId: string
-): Promise<ClientHistory | null> {
-  const db = await loadDatabase();
-  return (
-    db.client_history.find(
-      (h: ClientHistory) =>
-        h.client_id === clientId && h.barbershop_id === barbershopId
-    ) || null
-  );
+) {
+  const appointments = await prisma.appointment.findMany({
+    where: {
+      barbershopId,
+      clientId
+    },
+    include: {
+      client: true,
+      service: true
+    }
+  });
+
+  if (appointments.length === 0) {
+    return null;
+  }
+
+  const client = appointments[0].client;
+  let completedCount = 0;
+  let cancelledCount = 0;
+  let totalSpent = 0;
+
+  appointments.forEach((apt: any) => {
+    if (apt.status === 'confirmed' || apt.status === 'completed') {
+      completedCount += 1;
+      totalSpent += apt.service.price;
+    } else if (apt.status === 'cancelled') {
+      cancelledCount += 1;
+    }
+  });
+
+  return {
+    id: clientId,
+    barbershop_id: barbershopId,
+    client_id: clientId,
+    client_name: client.name,
+    client_phone: client.phone,
+    total_appointments: appointments.length,
+    completed_appointments: completedCount,
+    cancelled_appointments: cancelledCount,
+    total_spent: totalSpent,
+    last_appointment_date: appointments[appointments.length - 1].appointmentDate,
+  };
 }
 
 // ANALYTICS
@@ -117,62 +117,67 @@ export async function recordAnalytics(
   completedAppointments: number,
   cancelledAppointments: number,
   totalRevenue: number
-): Promise<Analytics> {
-  const db = await loadDatabase();
-
-  const existingAnalytic = db.analytics.find(
-    (a: Analytics) => a.barbershop_id === barbershopId && a.date === date
-  );
-
-  if (existingAnalytic) {
-    existingAnalytic.total_appointments = totalAppointments;
-    existingAnalytic.completed_appointments = completedAppointments;
-    existingAnalytic.cancelled_appointments = cancelledAppointments;
-    existingAnalytic.total_revenue = totalRevenue;
-  } else {
-    const analytic: Analytics = {
-      id: uuidv4(),
-      barbershop_id: barbershopId,
-      date,
-      total_appointments: totalAppointments,
-      completed_appointments: completedAppointments,
-      cancelled_appointments: cancelledAppointments,
-      total_revenue: totalRevenue,
-      created_at: new Date().toISOString(),
-    };
-    db.analytics.push(analytic);
-  }
-
-  await saveDatabase(db);
-  return existingAnalytic || db.analytics[db.analytics.length - 1];
+) {
+  // Analytics are now computed on-the-fly
+  return {
+    barbershop_id: barbershopId,
+    date,
+    total_appointments: totalAppointments,
+    completed_appointments: completedAppointments,
+    cancelled_appointments: cancelledAppointments,
+    total_revenue: totalRevenue,
+  };
 }
 
 export async function getAnalytics(
   barbershopId: string,
   startDate?: string,
   endDate?: string
-): Promise<any> {
-  const db = await loadDatabase();
-  let analytics = db.analytics.filter(
-    (a: Analytics) => a.barbershop_id === barbershopId
-  );
+) {
+  const start = startDate ? new Date(startDate) : new Date(0);
+  const end = endDate ? new Date(endDate) : new Date();
+  end.setHours(23, 59, 59, 999);
 
-  if (startDate) {
-    analytics = analytics.filter((a: Analytics) => a.date >= startDate);
-  }
-  if (endDate) {
-    analytics = analytics.filter((a: Analytics) => a.date <= endDate);
-  }
+  const appointments = await prisma.appointment.findMany({
+    where: {
+      barbershopId,
+      appointmentDate: {
+        gte: start,
+        lte: end
+      }
+    },
+    include: { service: true }
+  });
 
-  const totalRevenue = analytics.reduce((sum: number, a: Analytics) => sum + a.total_revenue, 0);
-  const totalAppointments = analytics.reduce(
-    (sum: number, a: Analytics) => sum + a.total_appointments,
-    0
-  );
-  const completedAppointments = analytics.reduce(
-    (sum: number, a: Analytics) => sum + a.completed_appointments,
-    0
-  );
+  // Group by date
+  const analyticsByDate: { [key: string]: any } = {};
+
+  appointments.forEach((apt: any) => {
+    const dateStr = apt.appointmentDate.toISOString().split('T')[0];
+    
+    if (!analyticsByDate[dateStr]) {
+      analyticsByDate[dateStr] = {
+        date: dateStr,
+        total_appointments: 0,
+        completed_appointments: 0,
+        cancelled_appointments: 0,
+        total_revenue: 0,
+      };
+    }
+
+    analyticsByDate[dateStr].total_appointments += 1;
+    if (apt.status === 'confirmed' || apt.status === 'completed') {
+      analyticsByDate[dateStr].completed_appointments += 1;
+      analyticsByDate[dateStr].total_revenue += apt.service.price;
+    } else if (apt.status === 'cancelled') {
+      analyticsByDate[dateStr].cancelled_appointments += 1;
+    }
+  });
+
+  const analytics = Object.values(analyticsByDate);
+  const totalRevenue = analytics.reduce((sum: number, a: any) => sum + a.total_revenue, 0);
+  const totalAppointments = analytics.reduce((sum: number, a: any) => sum + a.total_appointments, 0);
+  const completedAppointments = analytics.reduce((sum: number, a: any) => sum + a.completed_appointments, 0);
 
   return {
     analytics,
@@ -180,8 +185,7 @@ export async function getAnalytics(
       totalRevenue,
       totalAppointments,
       completedAppointments,
-      averageRevenuePerDay:
-        analytics.length > 0 ? Math.round(totalRevenue / analytics.length) : 0,
+      averageRevenuePerDay: analytics.length > 0 ? Math.round(totalRevenue / analytics.length) : 0,
     },
   };
 }
@@ -189,23 +193,53 @@ export async function getAnalytics(
 export async function getRevenueStats(
   barbershopId: string,
   month: string // YYYY-MM
-): Promise<any> {
-  const db = await loadDatabase();
-  const analytics = db.analytics.filter(
-    (a: Analytics) =>
-      a.barbershop_id === barbershopId && a.date.startsWith(month)
-  );
+) {
+  const [year, monthNum] = month.split('-').map(Number);
+  const startDate = new Date(year, monthNum - 1, 1);
+  const endDate = new Date(year, monthNum, 0);
+  endDate.setHours(23, 59, 59, 999);
 
-  const byService: { [key: string]: number } = {};
+  const appointments = await prisma.appointment.findMany({
+    where: {
+      barbershopId,
+      appointmentDate: {
+        gte: startDate,
+        lte: endDate
+      }
+    },
+    include: { service: true }
+  });
+
+  // Group by date
+  const dailyBreakdown: { [key: string]: any } = {};
   let totalRevenue = 0;
 
-  analytics.forEach((a: Analytics) => {
-    totalRevenue += a.total_revenue;
+  appointments.forEach((apt: any) => {
+    const dateStr = apt.appointmentDate.toISOString().split('T')[0];
+
+    if (!dailyBreakdown[dateStr]) {
+      dailyBreakdown[dateStr] = {
+        date: dateStr,
+        total_appointments: 0,
+        completed_appointments: 0,
+        cancelled_appointments: 0,
+        total_revenue: 0,
+      };
+    }
+
+    dailyBreakdown[dateStr].total_appointments += 1;
+    if (apt.status === 'confirmed' || apt.status === 'completed') {
+      dailyBreakdown[dateStr].completed_appointments += 1;
+      dailyBreakdown[dateStr].total_revenue += apt.service.price;
+      totalRevenue += apt.service.price;
+    } else if (apt.status === 'cancelled') {
+      dailyBreakdown[dateStr].cancelled_appointments += 1;
+    }
   });
 
   return {
     month,
     totalRevenue,
-    dailyBreakdown: analytics,
+    dailyBreakdown: Object.values(dailyBreakdown),
   };
 }

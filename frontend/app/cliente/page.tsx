@@ -73,11 +73,10 @@ export default function ClientBookingPage() {
     const appointmentDate = selectedDate ? selectedDate.toISOString().split('T')[0] : ""
     
     schedulingAPI.createAppointment({
-      barbershopId: "default",
-      serviceId: selectedService || "",
-      barberId: selectedBarber || "",
-      date: appointmentDate,
-      time: selectedTime || "",
+      barbershop_id: "barber-001",
+      service_id: selectedService || "",
+      appointment_date: appointmentDate,
+      appointment_time: selectedTime || "",
     }).then((result) => {
       setIsConfirming(false)
       if (result.error) {

@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
-import { getDatabase } from '../utils/database';
+import { prisma } from '../utils/prisma';
 import { AppError } from '../middleware/errorHandler';
+import { Appointment, Service } from '@prisma/client';
 
 export async function loginBarbershop(req: Request, res: Response, next: NextFunction) {
   try {
@@ -17,8 +18,9 @@ export async function loginBarbershop(req: Request, res: Response, next: NextFun
       throw new AppError('Credenciais inválidas', 401);
     }
 
-    const db = await getDatabase();
-    const barbershop = db.barbershops.find((b: any) => b.id === barbershop_id);
+    const barbershop = await prisma.barbershop.findUnique({
+      where: { id: barbershop_id }
+    });
 
     if (!barbershop) {
       throw new AppError('Barbearia não encontrada', 404);
@@ -44,32 +46,28 @@ export async function getBarbershopAppointments(req: Request, res: Response, nex
       throw new AppError('ID da barbearia é obrigatório', 400);
     }
 
-    const db = await getDatabase();
+    const appointments = await prisma.appointment.findMany({
+      where: { barbershopId: barbershop_id },
+      include: {
+        service: true,
+        client: true
+      },
+      orderBy: { appointmentDate: 'asc' }
+    });
 
-    const appointments = db.appointments
-      .filter((a: any) => a.barbershop_id === barbershop_id)
-      .map((a: any) => {
-        const service = db.services.find((s: any) => s.id === a.service_id);
-        const client = db.users.find((u: any) => u.id === a.client_id);
-        return {
-          id: a.id,
-          client_name: client?.name,
-          client_phone: client?.phone,
-          service_name: service?.name,
-          service_price: service?.price,
-          appointment_date: a.appointment_date,
-          appointment_time: a.appointment_time,
-          status: a.status,
-          created_at: a.created_at,
-        };
-      })
-      .sort((a: any, b: any) => {
-        const dateA = new Date(`${a.appointment_date}T${a.appointment_time}`);
-        const dateB = new Date(`${b.appointment_date}T${b.appointment_time}`);
-        return dateA.getTime() - dateB.getTime();
-      });
+    const mapped = appointments.map((a: Appointment & { service: Service; client: any }) => ({
+      id: a.id,
+      client_name: a.client.name,
+      client_phone: a.client.phone,
+      service_name: a.service.name,
+      service_price: a.service.price,
+      appointment_date: a.appointmentDate,
+      appointment_time: a.appointmentTime,
+      status: a.status,
+      created_at: a.createdAt,
+    }));
 
-    res.json(appointments);
+    res.json(mapped);
   } catch (error) {
     next(error);
   }
@@ -83,30 +81,37 @@ export async function getBarbershopAppointmentsByDate(req: Request, res: Respons
       throw new AppError('ID da barbearia e data são obrigatórios', 400);
     }
 
-    const db = await getDatabase();
+    // Parse date string to Date object
+    const dateObj = new Date(`${date}T00:00:00`);
+    const nextDayObj = new Date(dateObj);
+    nextDayObj.setDate(nextDayObj.getDate() + 1);
 
-    const appointments = db.appointments
-      .filter((a: any) => a.barbershop_id === barbershop_id && a.appointment_date === date)
-      .map((a: any) => {
-        const service = db.services.find((s: any) => s.id === a.service_id);
-        const client = db.users.find((u: any) => u.id === a.client_id);
-        return {
-          id: a.id,
-          client_name: client?.name,
-          client_phone: client?.phone,
-          service_name: service?.name,
-          service_price: service?.price,
-          appointment_time: a.appointment_time,
-          status: a.status,
-        };
-      })
-      .sort((a: any, b: any) => {
-        const timeA = a.appointment_time.split(':').map(Number);
-        const timeB = b.appointment_time.split(':').map(Number);
-        return timeA[0] * 60 + timeA[1] - (timeB[0] * 60 + timeB[1]);
-      });
+    const appointments = await prisma.appointment.findMany({
+      where: {
+        barbershopId: barbershop_id,
+        appointmentDate: {
+          gte: dateObj,
+          lt: nextDayObj
+        }
+      },
+      include: {
+        service: true,
+        client: true
+      },
+      orderBy: { appointmentTime: 'asc' }
+    });
 
-    res.json({ date, appointments });
+    const mapped = appointments.map((a: Appointment & { service: Service; client: any }) => ({
+      id: a.id,
+      client_name: a.client.name,
+      client_phone: a.client.phone,
+      service_name: a.service.name,
+      service_price: a.service.price,
+      appointment_time: a.appointmentTime,
+      status: a.status,
+    }));
+
+    res.json({ date, appointments: mapped });
   } catch (error) {
     next(error);
   }
@@ -120,23 +125,32 @@ export async function confirmAppointment(req: Request, res: Response, next: Next
       throw new AppError('ID do agendamento é obrigatório', 400);
     }
 
-    const db = await getDatabase();
+    const appointment = await prisma.appointment.findUnique({
+      where: { id: appointment_id }
+    });
 
-    const appointmentIndex = db.appointments.findIndex((a: any) => a.id === appointment_id);
-
-    if (appointmentIndex === -1) {
+    if (!appointment) {
       throw new AppError('Agendamento não encontrado', 404);
     }
 
-    db.appointments[appointmentIndex].status = 'confirmed';
-    db.appointments[appointmentIndex].updated_at = new Date();
-
-    const { saveDatabase } = require('../utils/database');
-    await saveDatabase();
+    const updated = await prisma.appointment.update({
+      where: { id: appointment_id },
+      data: { status: 'confirmed' }
+    });
 
     res.json({
       message: 'Agendamento confirmado com sucesso',
-      appointment: db.appointments[appointmentIndex],
+      appointment: {
+        id: updated.id,
+        status: updated.status,
+        barbershopId: updated.barbershopId,
+        clientId: updated.clientId,
+        serviceId: updated.serviceId,
+        appointmentDate: updated.appointmentDate,
+        appointmentTime: updated.appointmentTime,
+        createdAt: updated.createdAt,
+        updatedAt: updated.updatedAt
+      }
     });
   } catch (error) {
     next(error);
@@ -151,21 +165,30 @@ export async function getBarbershopStats(req: Request, res: Response, next: Next
       throw new AppError('ID da barbearia é obrigatório', 400);
     }
 
-    const db = await getDatabase();
+    const appointments = await prisma.appointment.findMany({
+      where: { barbershopId: barbershop_id },
+      include: { service: true }
+    });
 
-    const appointments = db.appointments.filter((a: any) => a.barbershop_id === barbershop_id);
-
-    // Calcular lucro total dos agendamentos confirmados
+    // Calculate total revenue from confirmed appointments
     const total_revenue = appointments
-      .filter((a: any) => a.status === 'confirmed')
-      .reduce((sum: number, a: any) => sum + (a.service_price || 0), 0);
+      .filter((a: typeof appointments[0]) => a.status === 'confirmed')
+      .reduce((sum: number, a: typeof appointments[0]) => sum + a.service.price, 0);
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const todayAppointments = appointments.filter(
+      (a: typeof appointments[0]) => a.appointmentDate >= today && a.appointmentDate < tomorrow
+    );
 
     const stats = {
       total_appointments: appointments.length,
-      confirmed: appointments.filter((a: any) => a.status === 'confirmed').length,
-      cancelled: appointments.filter((a: any) => a.status === 'cancelled').length,
-      today: appointments.filter((a: any) => a.appointment_date === new Date().toISOString().split('T')[0])
-        .length,
+      confirmed: appointments.filter((a: typeof appointments[0]) => a.status === 'confirmed').length,
+      cancelled: appointments.filter((a: typeof appointments[0]) => a.status === 'cancelled').length,
+      today: todayAppointments.length,
       total_revenue: total_revenue,
     };
 

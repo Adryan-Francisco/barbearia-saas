@@ -25,7 +25,7 @@ export function LandingNavbar() {
             <Scissors className="w-4 h-4 text-primary-foreground" />
           </div>
           <span className="font-heading text-lg font-bold text-foreground tracking-tight">
-            BarberPro
+            BarberFlow
           </span>
         </Link>
 

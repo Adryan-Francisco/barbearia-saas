@@ -1,6 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { v4 as uuidv4 } from 'uuid';
-import { getDatabase, saveDatabase } from '../utils/database';
+import { prisma } from '../utils/prisma';
 import { hashPassword, comparePassword } from '../utils/hash';
 import { generateToken } from '../utils/jwt';
 import { AppError } from '../middleware/errorHandler';
@@ -13,34 +12,37 @@ export async function register(req: Request, res: Response, next: NextFunction) 
       throw new AppError('Nome, telefone e senha são obrigatórios', 400);
     }
 
-    const db = await getDatabase();
-    
-    // Check if phone already exists
-    if (db.users.find((u: any) => u.phone === phone)) {
+    // Verificar se telefone já existe
+    const existingUser = await prisma.user.findUnique({
+      where: { phone }
+    });
+
+    if (existingUser) {
       throw new AppError('Telefone já registrado', 409);
     }
 
     const hashedPassword = await hashPassword(password);
-    const id = uuidv4();
 
-    db.users.push({
-      id,
-      name,
-      phone,
-      password: hashedPassword,
-      role: 'client',
-      created_at: new Date(),
-      updated_at: new Date()
+    const user = await prisma.user.create({
+      data: {
+        name,
+        phone,
+        password: hashedPassword,
+        role: 'client'
+      }
     });
 
-    await saveDatabase();
-
-    const token = generateToken({ id, role: 'client' });
+    const token = generateToken({ id: user.id, role: user.role });
 
     res.status(201).json({
-      message: 'User registered successfully',
+      message: 'Usuário registrado com sucesso',
       token,
-      user: { id, name, phone, role: 'client' }
+      user: {
+        id: user.id,
+        name: user.name,
+        phone: user.phone,
+        role: user.role
+      }
     });
   } catch (error) {
     next(error);
@@ -55,8 +57,9 @@ export async function login(req: Request, res: Response, next: NextFunction) {
       throw new AppError('Telefone e senha são obrigatórios', 400);
     }
 
-    const db = await getDatabase();
-    const user = db.users.find((u: any) => u.phone === phone);
+    const user = await prisma.user.findUnique({
+      where: { phone }
+    });
 
     if (!user) {
       throw new AppError('Credenciais inválidas', 401);
@@ -74,7 +77,7 @@ export async function login(req: Request, res: Response, next: NextFunction) {
     });
 
     res.json({
-      message: 'Login successful',
+      message: 'Login realizado com sucesso',
       token,
       user: {
         id: user.id,
@@ -94,8 +97,9 @@ export async function getProfile(req: Request, res: Response, next: NextFunction
       throw new AppError('Não autorizado', 401);
     }
 
-    const db = await getDatabase();
-    const user = db.users.find((u: any) => u.id === req.user!.id);
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id }
+    });
 
     if (!user) {
       throw new AppError('Usuário não encontrado', 404);
@@ -105,7 +109,8 @@ export async function getProfile(req: Request, res: Response, next: NextFunction
       id: user.id,
       name: user.name,
       phone: user.phone,
-      role: user.role
+      role: user.role,
+      createdAt: user.createdAt
     });
   } catch (error) {
     next(error);

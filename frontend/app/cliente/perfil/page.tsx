@@ -1,8 +1,7 @@
 "use client"
 
 import React from "react"
-
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -11,9 +10,36 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Switch } from "@/components/ui/switch"
 import { User, Mail, Phone, Lock, Bell, Calendar, Scissors } from "lucide-react"
 
+interface UserData {
+  id: string
+  name: string
+  phone: string
+  role: string
+}
+
 export default function ClientProfilePage() {
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [user, setUser] = useState<UserData | null>(null)
+
+  useEffect(() => {
+    const savedUser = localStorage.getItem('user')
+    if (savedUser) {
+      try {
+        setUser(JSON.parse(savedUser))
+      } catch (error) {
+        console.error('Erro ao parsear usuário:', error)
+      }
+    }
+  }, [])
+
+  const userName = user?.name || "Usuário"
+  const userPhone = user?.phone || ""
+  const userInitials = user?.name
+    ?.split(' ')
+    .map((n) => n[0])
+    .join('')
+    .toUpperCase() || "U"
 
   function handleSave(e: React.FormEvent) {
     e.preventDefault()
@@ -39,11 +65,11 @@ export default function ClientProfilePage() {
             <CardContent className="p-6 flex flex-col items-center text-center">
               <Avatar className="w-24 h-24 mb-4">
                 <AvatarFallback className="bg-primary/10 text-primary text-2xl font-bold">
-                  JS
+                  {userInitials}
                 </AvatarFallback>
               </Avatar>
-              <h2 className="font-heading text-lg font-bold text-card-foreground">Joao Silva</h2>
-              <p className="text-sm text-muted-foreground">joao.silva@email.com</p>
+              <h2 className="font-heading text-lg font-bold text-card-foreground">{userName}</h2>
+              <p className="text-sm text-muted-foreground">{userPhone}</p>
 
               <div className="w-full mt-6 pt-5 border-t border-border flex flex-col gap-4">
                 <div className="flex items-center justify-between">
@@ -88,7 +114,7 @@ export default function ClientProfilePage() {
                     </Label>
                     <Input
                       id="name"
-                      defaultValue="Joao Silva"
+                      defaultValue={userName}
                       className="bg-secondary border-border text-foreground"
                     />
                   </div>
@@ -110,7 +136,7 @@ export default function ClientProfilePage() {
                   </Label>
                   <Input
                     id="phone"
-                    defaultValue="(11) 99999-9999"
+                    defaultValue={userPhone}
                     className="bg-secondary border-border text-foreground max-w-sm"
                   />
                 </div>

@@ -1,6 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { v4 as uuidv4 } from 'uuid';
-import { getDatabase, saveDatabase } from '../utils/database';
+import { prisma } from '../utils/prisma';
 import { AppError } from '../middleware/errorHandler';
 
 export async function addFavorite(req: Request, res: Response, next: NextFunction) {
@@ -15,31 +14,35 @@ export async function addFavorite(req: Request, res: Response, next: NextFunctio
       throw new AppError('Barbershop ID é obrigatório', 400);
     }
 
-    const db = await getDatabase();
+    // Verify barbershop exists
+    const barbershop = await prisma.barbershop.findUnique({
+      where: { id: barbershopId }
+    });
 
-    // Criar estrutura de favoritos se não existir
-    if (!db.favorites) {
-      db.favorites = [];
+    if (!barbershop) {
+      throw new AppError('Barbearia não encontrada', 404);
     }
 
-    // Verificar se já é favorito
-    const isFavorite = db.favorites.some(
-      (fav: any) => fav.clientId === req.user?.id && fav.barbershopId === barbershopId
-    );
+    // Check if already favorite
+    const existing = await prisma.favorite.findUnique({
+      where: {
+        userId_barbershopId: {
+          userId: req.user.id,
+          barbershopId
+        }
+      }
+    });
 
-    if (isFavorite) {
+    if (existing) {
       throw new AppError('Barbearia já está nos favoritos', 409);
     }
 
-    // Adicionar novo favorito
-    db.favorites.push({
-      id: uuidv4(),
-      clientId: req.user.id,
-      barbershopId,
-      createdAt: new Date().toISOString(),
+    await prisma.favorite.create({
+      data: {
+        userId: req.user.id,
+        barbershopId
+      }
     });
-
-    await saveDatabase(db);
 
     res.status(201).json({
       message: 'Adicionado aos favoritos',
@@ -58,22 +61,27 @@ export async function removeFavorite(req: Request, res: Response, next: NextFunc
 
     const { barbershopId } = req.params;
 
-    const db = await getDatabase();
+    const favorite = await prisma.favorite.findUnique({
+      where: {
+        userId_barbershopId: {
+          userId: req.user.id,
+          barbershopId
+        }
+      }
+    });
 
-    if (!db.favorites) {
-      throw new AppError('Nenhum favorito encontrado', 404);
-    }
-
-    const initialLength = db.favorites.length;
-    db.favorites = db.favorites.filter(
-      (fav: any) => !(fav.clientId === req.user?.id && fav.barbershopId === barbershopId)
-    );
-
-    if (db.favorites.length === initialLength) {
+    if (!favorite) {
       throw new AppError('Favorito não encontrado', 404);
     }
 
-    await saveDatabase(db);
+    await prisma.favorite.delete({
+      where: {
+        userId_barbershopId: {
+          userId: req.user.id,
+          barbershopId
+        }
+      }
+    });
 
     res.json({ message: 'Removido dos favoritos' });
   } catch (error) {
@@ -87,18 +95,17 @@ export async function getFavorites(req: Request, res: Response, next: NextFuncti
       throw new AppError('Não autorizado', 401);
     }
 
-    const db = await getDatabase();
-
-    const favorites = db.favorites?.filter((fav: any) => fav.clientId === req.user?.id) || [];
-
-    // Enriquecer com dados da barbearia
-    const enrichedFavorites = favorites.map((fav: any) => {
-      const barbershop = db.barbershops?.find((b: any) => b.id === fav.barbershopId);
-      return {
-        ...fav,
-        barbershop,
-      };
+    const favorites = await prisma.favorite.findMany({
+      where: { userId: req.user.id },
+      include: { barbershop: true }
     });
+
+    const enrichedFavorites = favorites.map((fav: typeof favorites[0]) => ({
+      userId: fav.userId,
+      barbershopId: fav.barbershopId,
+      createdAt: fav.createdAt,
+      barbershop: fav.barbershop,
+    }));
 
     res.json({
       total: enrichedFavorites.length,
@@ -116,13 +123,17 @@ export async function isFavorite(req: Request, res: Response, next: NextFunction
     }
 
     const { barbershopId } = req.params;
-    const db = await getDatabase();
 
-    const isFav = db.favorites?.some(
-      (fav: any) => fav.clientId === req.user?.id && fav.barbershopId === barbershopId
-    ) || false;
+    const favorite = await prisma.favorite.findUnique({
+      where: {
+        userId_barbershopId: {
+          userId: req.user.id,
+          barbershopId
+        }
+      }
+    });
 
-    res.json({ barbershopId, isFavorite: isFav });
+    res.json({ barbershopId, isFavorite: !!favorite });
   } catch (error) {
     next(error);
   }

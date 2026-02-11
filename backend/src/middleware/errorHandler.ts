@@ -22,9 +22,11 @@ export function errorHandler(
     });
   }
 
-  console.error('Erro inesperado:', err);
+  console.error('Erro inesperado:', err.message);
+  console.error('Stack:', err.stack);
   res.status(500).json({
     error: 'Erro interno do servidor',
-    status: 500
+    status: 500,
+    message: err.message
   });
 }

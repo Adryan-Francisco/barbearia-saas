@@ -12,7 +12,7 @@ export async function postReview(req: Request, res: Response) {
     const { barbershopId, clientId, appointmentId, rating, comment, clientName } =
       req.body;
 
-    if (!barbershopId || !clientId || !appointmentId || !rating || !clientName) {
+    if (!barbershopId || !clientId || !rating) {
       return res.status(400).json({ error: 'Dados inválidos' });
     }
 

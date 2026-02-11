@@ -26,10 +26,19 @@ async function apiCall<T>(
     const url = `${API_URL}${endpoint}`;
     const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
 
-    const headers: HeadersInit = {
+    const headers: Record<string, string> = {
       'Content-Type': 'application/json',
-      ...options?.headers,
     };
+
+    if (options?.headers && typeof options.headers === 'object' && !Array.isArray(options.headers)) {
+      if (options.headers instanceof Headers) {
+        options.headers.forEach((value, key) => {
+          headers[key] = value;
+        });
+      } else {
+        Object.assign(headers, options.headers as Record<string, string>);
+      }
+    }
 
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
@@ -96,11 +105,10 @@ export const authAPI = {
 // ==================== SCHEDULING ====================
 export const schedulingAPI = {
   createAppointment: (data: {
-    barbershopId: string;
-    serviceId: string;
-    barberId: string;
-    date: string;
-    time: string;
+    barbershop_id: string;
+    service_id: string;
+    appointment_date: string;
+    appointment_time: string;
   }) =>
     apiCall('/scheduling/appointments', {
       method: 'POST',

@@ -239,11 +239,10 @@ export default function BarbershopBookingPage({
     const appointmentDate = selectedDate ? selectedDate.toISOString().split('T')[0] : ""
     
     schedulingAPI.createAppointment({
-      barbershopId,
-      serviceId: selectedService || "",
-      barberId: selectedBarber || "",
-      date: appointmentDate,
-      time: selectedTime || "",
+      barbershop_id: barbershopId,
+      service_id: selectedService || "",
+      appointment_date: appointmentDate,
+      appointment_time: selectedTime || "",
     }).then((result) => {
       setIsConfirming(false)
       if (result.error) {

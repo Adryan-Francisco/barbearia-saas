@@ -1,17 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
-import { getDatabase, saveDatabase } from '../utils/database';
+import { prisma } from '../utils/prisma';
 import { AppError } from '../middleware/errorHandler';
-
-export interface CancellationHistory {
-  id: string;
-  appointmentId: string;
-  clientId: string;
-  barbershopId: string;
-  reason?: string;
-  cancelledAt: string;
-  originalDate: string;
-  originalTime: string;
-}
 
 export async function getCancellationHistory(
   req: Request,
@@ -23,20 +12,32 @@ export async function getCancellationHistory(
       throw new AppError('Não autorizado', 401);
     }
 
-    const db = await getDatabase();
-    const cancellationHistory = db.cancellationHistory || [];
+    const cancellations = await prisma.cancellation.findMany({
+      where: {
+        appointment: {
+          clientId: req.user.id
+        }
+      },
+      include: {
+        appointment: true
+      },
+      orderBy: { createdAt: 'desc' }
+    });
 
-    // Filtrar histórico do cliente
-    const clientCancellations = cancellationHistory.filter(
-      (h: CancellationHistory) => h.clientId === req.user?.id
-    );
+    const mapped = cancellations.map((c: typeof cancellations[0]) => ({
+      id: c.id,
+      appointmentId: c.appointmentId,
+      clientId: c.appointment.clientId,
+      barbershopId: c.appointment.barbershopId,
+      reason: c.reason,
+      cancelledAt: c.createdAt,
+      originalDate: c.appointment.appointmentDate,
+      originalTime: c.appointment.appointmentTime,
+    }));
 
     res.json({
-      total: clientCancellations.length,
-      cancellations: clientCancellations.sort(
-        (a: any, b: any) =>
-          new Date(b.cancelledAt).getTime() - new Date(a.cancelledAt).getTime()
-      ),
+      total: mapped.length,
+      cancellations: mapped,
     });
   } catch (error) {
     next(error);
@@ -54,47 +55,46 @@ export async function getBarbershopCancellationStats(
     }
 
     const { barbershopId } = req.params;
-    const db = await getDatabase();
-    const cancellationHistory = db.cancellationHistory || [];
 
-    // Filtrar cancelamentos da barbearia
-    const barbershopCancellations = cancellationHistory.filter(
-      (h: CancellationHistory) => h.barbershopId === barbershopId
-    );
+    const cancellations = await prisma.cancellation.findMany({
+      where: {
+        appointment: {
+          barbershopId
+        }
+      },
+      include: {
+        appointment: true
+      }
+    });
 
-    // Calcular estatísticas
+    // Calculate statistics
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+    const cancelledThisMonth = cancellations.filter(
+      (c: typeof cancellations[0]) => c.createdAt >= monthStart
+    ).length;
+
+    const cancelledThisWeek = cancellations.filter(
+      (c: typeof cancellations[0]) => c.createdAt >= weekAgo
+    ).length;
+
+    const commonReasons: { [key: string]: number } = {};
+    cancellations.forEach((c: typeof cancellations[0]) => {
+      const reason = c.reason || 'Sem motivo informado';
+      commonReasons[reason] = (commonReasons[reason] || 0) + 1;
+    });
+
     const stats = {
-      totalCancellations: barbershopCancellations.length,
-      cancelledThisMonth: barbershopCancellations.filter((h: CancellationHistory) => {
-        const cancelDate = new Date(h.cancelledAt);
-        const now = new Date();
-        return (
-          cancelDate.getMonth() === now.getMonth() &&
-          cancelDate.getFullYear() === now.getFullYear()
-        );
-      }).length,
-      cancelledThisWeek: barbershopCancellations.filter((h: CancellationHistory) => {
-        const cancelDate = new Date(h.cancelledAt);
-        const now = new Date();
-        const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-        return cancelDate >= weekAgo;
-      }).length,
-      commonReasons: getCommonReasons(barbershopCancellations),
+      totalCancellations: cancellations.length,
+      cancelledThisMonth,
+      cancelledThisWeek,
+      commonReasons,
     };
 
     res.json(stats);
   } catch (error) {
     next(error);
   }
-}
-
-function getCommonReasons(cancellations: CancellationHistory[]): { [key: string]: number } {
-  const reasons: { [key: string]: number } = {};
-
-  cancellations.forEach((c: CancellationHistory) => {
-    const reason = c.reason || 'Sem motivo informado';
-    reasons[reason] = (reasons[reason] || 0) + 1;
-  });
-
-  return reasons;
 }

@@ -1,6 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { v4 as uuidv4 } from 'uuid';
-import { getDatabase, saveDatabase } from '../utils/database';
+import { prisma } from '../utils/prisma';
 import { AppError } from '../middleware/errorHandler';
 import { sendWhatsAppMessage } from '../services/whatsappService';
 import { websocketService } from '../services/websocketService';
@@ -24,55 +23,58 @@ export async function createAppointment(req: Request, res: Response, next: NextF
       throw new AppError('Este horário não está disponível', 409);
     }
 
-    const db = await getDatabase();
-    const id = uuidv4();
+    // Verify barbershop and service exist
+    const [barbershop, service] = await Promise.all([
+      prisma.barbershop.findUnique({ where: { id: barbershop_id } }),
+      prisma.service.findUnique({ where: { id: service_id } })
+    ]);
 
-    const client = db.users.find((u: any) => u.id === req.user!.id);
-    const barbershop = db.barbershops.find((b: any) => b.id === barbershop_id);
-    const service = db.services.find((s: any) => s.id === service_id);
+    if (!barbershop || !service) {
+      throw new AppError('Barbearia ou serviço não encontrados', 404);
+    }
 
-    db.appointments.push({
-      id,
-      barbershop_id,
-      client_id: req.user.id,
-      service_id,
-      appointment_date,
-      appointment_time,
-      status: 'confirmed',
-      created_at: new Date(),
-      updated_at: new Date()
+    const appointment = await prisma.appointment.create({
+      data: {
+        barbershopId: barbershop_id,
+        clientId: req.user.id,
+        serviceId: service_id,
+        appointmentDate: new Date(appointment_date),
+        appointmentTime: appointment_time,
+        status: 'confirmed'
+      },
+      include: {
+        client: true,
+        barbershop: true,
+        service: true
+      }
     });
 
-    await saveDatabase();
-
-    // Emitir notificação via WebSocket
+    // Notify via WebSocket
     websocketService.notifyAppointmentConfirmed(barbershop_id, {
-      clientName: client?.name,
-      serviceName: service?.name,
+      clientName: appointment.client.name,
+      serviceName: service.name,
       date: appointment_date,
       time: appointment_time,
-      appointmentId: id
+      appointmentId: appointment.id
     });
 
-    if (barbershop && client && service) {
-      const message = `Olá ${client.name}! Seu agendamento foi confirmado!\n\nServiço: ${service.name}\nData: ${appointment_date}\nHorário: ${appointment_time}\n\nObrigado!`;
-      
-      try {
-        await sendWhatsAppMessage(client.phone, message);
-      } catch (error) {
-        console.error('Error sending WhatsApp message:', error);
-      }
+    // Send WhatsApp notification
+    try {
+      const message = `Olá ${appointment.client.name}! Seu agendamento foi confirmado!\n\nServiço: ${service.name}\nData: ${appointment_date}\nHorário: ${appointment_time}\n\nObrigado!`;
+      await sendWhatsAppMessage(appointment.client.phone, message);
+    } catch (error) {
+      console.error('Error sending WhatsApp message:', error);
     }
 
     res.status(201).json({
-      message: 'Appointment created successfully',
+      message: 'Agendamento criado com sucesso',
       appointment: {
-        id,
-        barbershop_id,
-        service_id,
-        appointment_date,
-        appointment_time,
-        status: 'confirmed'
+        id: appointment.id,
+        barbershop_id: appointment.barbershopId,
+        service_id: appointment.serviceId,
+        appointment_date: appointment.appointmentDate,
+        appointment_time: appointment.appointmentTime,
+        status: appointment.status
       }
     });
   } catch (error) {
@@ -92,19 +94,16 @@ export async function cancelAppointment(req: Request, res: Response, next: NextF
       throw new AppError('ID do agendamento é obrigatório', 400);
     }
 
-    const db = await getDatabase();
+    const appointment = await prisma.appointment.findUnique({
+      where: { id: appointmentId },
+      include: { client: true }
+    });
 
-    const appointmentIndex = db.appointments.findIndex(
-      (a: any) => a.id === appointmentId && a.client_id === req.user!.id
-    );
-
-    if (appointmentIndex === -1) {
+    if (!appointment || appointment.clientId !== req.user.id) {
       throw new AppError('Agendamento não encontrado', 404);
     }
 
-    const appointment = db.appointments[appointmentIndex];
-
-    const appointmentDateTime = new Date(`${appointment.appointment_date}T${appointment.appointment_time}`);
+    const appointmentDateTime = appointment.appointmentDate;
     const now = new Date();
     const oneHourBefore = new Date(appointmentDateTime.getTime() - 60 * 60 * 1000);
 
@@ -112,33 +111,29 @@ export async function cancelAppointment(req: Request, res: Response, next: NextF
       throw new AppError('Não é possível cancelar com menos de 1 hora de antecedência', 409);
     }
 
-    db.appointments[appointmentIndex].status = 'cancelled';
-    db.appointments[appointmentIndex].updated_at = new Date();
+    const updatedAppointment = await prisma.appointment.update({
+      where: { id: appointmentId },
+      data: { status: 'cancelled' }
+    });
 
-    await saveDatabase();
-
-    const client = db.users.find((u: any) => u.id === req.user!.id);
-
-    // Emitir notificação via WebSocket
-    websocketService.notifyAppointmentCancelled(appointment.barbershop_id, {
-      clientName: client?.name,
-      date: appointment.appointment_date,
-      time: appointment.appointment_time,
+    // Notify via WebSocket
+    websocketService.notifyAppointmentCancelled(appointment.barbershopId, {
+      clientName: appointment.client.name,
+      date: appointment.appointmentDate.toISOString().split('T')[0],
+      time: appointment.appointmentTime,
       appointmentId: appointmentId
     });
 
-    if (client) {
-      const message = `Olá ${client.name}! Seu agendamento foi cancelado com sucesso.`;
-      
-      try {
-        await sendWhatsAppMessage(client.phone, message);
-      } catch (error) {
-        console.error('Error sending WhatsApp cancellation message:', error);
-      }
+    // Send WhatsApp notification
+    try {
+      const message = `Olá ${appointment.client.name}! Seu agendamento foi cancelado com sucesso.`;
+      await sendWhatsAppMessage(appointment.client.phone, message);
+    } catch (error) {
+      console.error('Error sending WhatsApp cancellation message:', error);
     }
 
     res.json({
-      message: 'Appointment cancelled successfully',
+      message: 'Agendamento cancelado com sucesso',
       appointment: { id: appointmentId, status: 'cancelled' }
     });
   } catch (error) {
@@ -149,28 +144,33 @@ export async function cancelAppointment(req: Request, res: Response, next: NextF
 export async function listAppointments(req: Request, res: Response, next: NextFunction) {
   try {
     if (!req.user) {
-      throw new AppError('Unauthorized', 401);
+      throw new AppError('Não autorizado', 401);
     }
 
-    const db = await getDatabase();
-    const appointments = db.appointments
-      .filter((a: any) => a.client_id === req.user!.id)
-      .map((a: any) => {
-        const service = db.services.find((s: any) => s.id === a.service_id);
-        const barbershop = db.barbershops.find((b: any) => b.id === a.barbershop_id);
-        return {
-          ...a,
-          service_name: service?.name,
-          barbershop_name: barbershop?.name
-        };
-      })
-      .sort((a: any, b: any) => {
-        const dateA = new Date(`${b.appointment_date}T${b.appointment_time}`);
-        const dateB = new Date(`${a.appointment_date}T${a.appointment_time}`);
-        return dateA.getTime() - dateB.getTime();
-      });
+    const appointments = await prisma.appointment.findMany({
+      where: { clientId: req.user.id },
+      include: {
+        service: true,
+        barbershop: true
+      },
+      orderBy: { appointmentDate: 'desc' }
+    });
 
-    res.json(appointments);
+    const mappedAppointments = appointments.map((a: typeof appointments[number]) => ({
+      id: a.id,
+      barbershop_id: a.barbershopId,
+      client_id: a.clientId,
+      service_id: a.serviceId,
+      appointment_date: a.appointmentDate,
+      appointment_time: a.appointmentTime,
+      status: a.status,
+      service_name: a.service.name,
+      barbershop_name: a.barbershop.name,
+      created_at: a.createdAt,
+      updated_at: a.updatedAt
+    }));
+
+    res.json(mappedAppointments);
   } catch (error) {
     next(error);
   }

@@ -1,8 +1,10 @@
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
+import compression from 'compression';
+import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
 import { createServer } from 'http';
-import { initializeDatabase } from './utils/database';
 import { websocketService } from './services/websocketService';
 import { cacheMiddleware } from './utils/cache';
 import { paginationMiddleware } from './utils/pagination';
@@ -24,23 +26,46 @@ const httpServer = createServer(app);
 const PORT = process.env.PORT || 3001;
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
 
-// Middleware
+// Security & Performance Middleware
+app.use(helmet()); // Segurança de headers
+app.use(compression()); // Gzip compression
+
+// CORS configurado para produção
 app.use(cors({
-  origin: FRONTEND_URL,
+  origin: process.env.NODE_ENV === 'production' 
+    ? [FRONTEND_URL] 
+    : ['http://localhost:3000', 'http://localhost:3002', 'http://localhost:3001'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
-app.use(express.json());
-app.use(paginationMiddleware); // Middleware de paginação
-app.use(cacheMiddleware(5 * 60 * 1000)); // Cache de 5 minutos para GET requests
 
-// Inicializar banco de dados
-initializeDatabase().then(() => {
-  console.log('Database initialized');
-}).catch(err => {
-  console.error('Falha ao inicializar banco de dados:', err);
+// Rate Limiting - Geral
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: process.env.NODE_ENV === 'production' ? 100 : 1000,
+  message: 'Muitas requisições de seu IP, tente novamente mais tarde',
+  standardHeaders: true,
+  legacyHeaders: false,
 });
+app.use('/api/', limiter);
+
+// Rate Limiting - Autenticação (mais restritivo)
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5, // Máximo 5 tentativas
+  skipSuccessfulRequests: true, // Não conta sucessos
+  message: 'Muitas tentativas de autenticação. Tente novamente em 15 minutos',
+});
+app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/register', authLimiter);
+
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ limit: '10mb', extended: true }));
+app.use(paginationMiddleware);
+app.use(cacheMiddleware(5 * 60 * 1000));
+
+// Database uses Prisma - no need for initializeDatabase
 
 // Inicializar WebSocket
 websocketService.initialize(httpServer);

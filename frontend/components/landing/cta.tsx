@@ -9,10 +9,10 @@ export function LandingCTA() {
         <div className="relative overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/10 via-card to-card p-10 sm:p-16 text-center">
           <div className="relative z-10 max-w-2xl mx-auto">
             <h2 className="font-heading text-3xl sm:text-4xl font-bold text-foreground text-balance">
-              Pronto para uma experiencia premium?
+              Pronto para uma experiência premium?
             </h2>
             <p className="mt-4 text-muted-foreground leading-relaxed text-lg">
-              Agende seu horario agora mesmo e descubra por que somos referencia em barbearia. 
+              Agende seu horário agora mesmo e descubra por que somos referência em barbearia. 
               Primeira visita com 10% de desconto.
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center mt-8">

@@ -9,6 +9,9 @@ interface Database {
   services: any[];
   appointments: any[];
   availability: any[];
+  favorites?: any[];
+  reviews?: any[];
+  cancellationHistory?: any[];
 }
 
 let db: Database | null = null;
@@ -36,17 +39,27 @@ export async function getDatabase(): Promise<Database> {
       barbershops: [],
       services: [],
       appointments: [],
-      availability: []
+      availability: [],
+      favorites: [],
+      reviews: [],
+      cancellationHistory: []
     };
   }
 
   return db as Database;
 }
 
-export async function saveDatabase(): Promise<void> {
-  if (!db) return;
+export async function saveDatabase(database?: Database): Promise<void> {
+  const dataToSave = database || db;
+  if (!dataToSave) return;
+  
+  // Atualizar a variável global db se um banco foi passado
+  if (database) {
+    db = database;
+  }
+  
   ensureDataDir();
-  fs.writeFileSync(DATA_FILE, JSON.stringify(db, null, 2));
+  fs.writeFileSync(DATA_FILE, JSON.stringify(dataToSave, null, 2));
 }
 
 export async function initializeDatabase(): Promise<void> {

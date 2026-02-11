@@ -99,7 +99,9 @@ export function validateRequest(rules: ValidationRule[]) {
     }
 
     if (Object.keys(errors).length > 0) {
-      throw new AppError('Validação falhou', 400, errors);
+      const error = new AppError('Validação falhou', 400);
+      (error as any).errors = errors;
+      throw error;
     }
 
     next();

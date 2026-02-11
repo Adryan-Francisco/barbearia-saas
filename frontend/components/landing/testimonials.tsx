@@ -6,25 +6,25 @@ const testimonials = [
   {
     name: "Mateus Oliveira",
     initials: "MO",
-    text: "Melhor barbearia que ja frequentei. Profissionalismo e resultado impecavel toda vez. Agendamento online facilita muito a vida.",
+    text: "Melhor barbearia que já frequentei. Profissionalismo e resultado impecável toda vez. Agendamento online facilita muito a vida.",
     rating: 5,
   },
   {
     name: "Bruno Ferreira",
     initials: "BF",
-    text: "O ambiente e incrivel e os barbeiros realmente sabem o que estao fazendo. Recomendo o combo corte + barba, voce sai outra pessoa.",
+    text: "O ambiente é incrível e os barbeiros realmente sabem o que estão fazendo. Recomendo o combo corte + barba, você sai outra pessoa.",
     rating: 5,
   },
   {
     name: "Diego Santos",
     initials: "DS",
-    text: "Atendimento nota 10. Sempre saio satisfeito e o sistema de agendamento e muito pratico. Nao troco por nada.",
+    text: "Atendimento nota 10. Sempre saio satisfeito e o sistema de agendamento é muito prático. Não troco por nada.",
     rating: 5,
   },
   {
     name: "Pedro Henrique",
     initials: "PH",
-    text: "A pigmentacao ficou perfeita, muito natural. E o cuidado com cada detalhe mostra a qualidade do servico. Top demais!",
+    text: "A pigmentação ficou perfeita, muito natural. E o cuidado com cada detalhe mostra a qualidade do serviço. Top demais!",
     rating: 5,
   },
 ]
@@ -42,7 +42,7 @@ export function LandingTestimonials() {
             O que nossos clientes dizem
           </h2>
           <p className="mt-4 text-muted-foreground leading-relaxed">
-            A satisfacao dos nossos clientes e o nosso maior orgulho.
+            A satisfação dos nossos clientes é o nosso maior orgulho.
           </p>
         </div>
 

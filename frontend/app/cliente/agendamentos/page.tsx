@@ -113,8 +113,28 @@ export default function ClientAppointmentsPage() {
         description: result.error.message,
         variant: "destructive",
       })
-    } else if (result.data) {
-      setLocalAppointments(result.data)
+    } else if (result.data && Array.isArray(result.data)) {
+      // Transformar dados da API para o formato esperado
+      const transformedAppointments = result.data.map((apt: any) => {
+        const date = new Date(`${apt.appointment_date}T${apt.appointment_time}`)
+        const formattedDate = date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })
+        
+        // Converter status do inglês para português
+        let statusPt: "confirmado" | "concluido" | "cancelado" = "confirmado"
+        if (apt.status === "cancelled") statusPt = "cancelado"
+        if (apt.status === "completed") statusPt = "concluido"
+        
+        return {
+          id: apt.id,
+          service: apt.service_name || "Serviço desconhecido",
+          barber: apt.barbershop_name || "Barbearia desconhecida",
+          date: formattedDate,
+          time: apt.appointment_time,
+          price: 0, // Precisamos adicionar o preço na API
+          status: statusPt
+        }
+      })
+      setLocalAppointments(transformedAppointments)
     }
     
     setIsLoading(false)

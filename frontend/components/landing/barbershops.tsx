@@ -88,7 +88,7 @@ export function LandingBarbershops() {
             Escolha onde cortar
           </h2>
           <p className="mt-4 text-muted-foreground leading-relaxed">
-            Encontre a barbearia perfeita para voce. Selecione uma para ver servicos e agendar seu horario.
+            Encontre a barbearia perfeita para você. Selecione uma para ver serviços e agendar seu horário.
           </p>
         </div>
 

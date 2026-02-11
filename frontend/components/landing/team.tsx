@@ -32,10 +32,10 @@ export function LandingTeam() {
             Nossa Equipe
           </span>
           <h2 className="font-heading text-3xl sm:text-4xl font-bold text-foreground mt-3 text-balance">
-            Profissionais de excelencia
+            Profissionais de excelência
           </h2>
           <p className="mt-4 text-muted-foreground leading-relaxed">
-            Nossa equipe reune anos de experiencia e paixao pela arte da barbearia.
+            Nossa equipe reúne anos de experiência e paixão pela arte da barbearia.
           </p>
         </div>
 

@@ -1,13 +1,13 @@
 "use client"
 
 import React from "react"
-
+import { useEffect, useState } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import { usePathname } from "next/navigation"
-import { Scissors, Calendar, ClockIcon, User, LogOut, Menu, X } from "lucide-react"
+import { Calendar, ClockIcon, User, LogOut, Menu, X } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { useState } from "react"
 
 const clientNav = [
   { label: "Agendar", href: "/cliente", icon: Calendar },
@@ -15,9 +15,35 @@ const clientNav = [
   { label: "Meu Perfil", href: "/cliente/perfil", icon: User },
 ]
 
+interface User {
+  id: string
+  name: string
+  phone: string
+  role: string
+}
+
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [user, setUser] = useState<User | null>(null)
+
+  useEffect(() => {
+    const savedUser = localStorage.getItem('user')
+    if (savedUser) {
+      try {
+        setUser(JSON.parse(savedUser))
+      } catch (error) {
+        console.error('Erro ao parsear usuário:', error)
+      }
+    }
+  }, [])
+
+  const userName = user?.name || "Usuário"
+  const userInitials = user?.name
+    ?.split(' ')
+    .map((n) => n[0])
+    .join('')
+    .toUpperCase() || "U"
 
   return (
     <div className="min-h-screen bg-background">
@@ -26,10 +52,14 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
         <div className="mx-auto max-w-6xl flex items-center justify-between px-6 h-16">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2.5">
-            <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary">
-              <Scissors className="w-4 h-4 text-primary-foreground" />
-            </div>
-            <span className="font-heading text-lg font-bold text-foreground">BarberPro</span>
+            <Image
+              src="/icon.jpg"
+              alt="BarberFlow Logo"
+              width={32}
+              height={32}
+              className="rounded-lg"
+            />
+            <span className="font-heading text-lg font-bold text-foreground">BarberFlow</span>
           </Link>
 
           {/* Desktop nav */}
@@ -59,10 +89,10 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
             <div className="hidden md:flex items-center gap-3">
               <Avatar className="w-8 h-8">
                 <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
-                  JS
+                  {userInitials}
                 </AvatarFallback>
               </Avatar>
-              <span className="text-sm font-medium text-foreground">Joao Silva</span>
+              <span className="text-sm font-medium text-foreground">{userName}</span>
               <Link
                 href="/"
                 className="text-muted-foreground hover:text-foreground transition-colors ml-2"
@@ -111,10 +141,10 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
             <div className="flex items-center gap-3 px-3 py-2.5 mt-2 border-t border-border pt-4">
               <Avatar className="w-8 h-8">
                 <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
-                  JS
+                  {userInitials}
                 </AvatarFallback>
               </Avatar>
-              <span className="text-sm font-medium text-foreground flex-1">Joao Silva</span>
+              <span className="text-sm font-medium text-foreground flex-1">{userName}</span>
               <Link href="/" className="text-muted-foreground hover:text-foreground" aria-label="Sair">
                 <LogOut className="w-4 h-4" />
               </Link>

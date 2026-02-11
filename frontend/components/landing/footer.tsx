@@ -12,19 +12,19 @@ export function LandingFooter() {
               <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary">
                 <Scissors className="w-4 h-4 text-primary-foreground" />
               </div>
-              <span className="font-heading text-lg font-bold text-foreground">BarberPro</span>
+              <span className="font-heading text-lg font-bold text-foreground">BarberFlow</span>
             </Link>
             <p className="mt-4 text-sm text-muted-foreground leading-relaxed">
-              Barbearia premium com foco em estilo, tecnica e experiencia.
+              Barbearia premium com foco em estilo, técnica e experiência.
             </p>
           </div>
 
           {/* Links */}
           <div>
-            <h4 className="text-sm font-semibold text-foreground mb-4">Navegacao</h4>
+            <h4 className="text-sm font-semibold text-foreground mb-4">Navegação</h4>
             <ul className="flex flex-col gap-2.5">
               <li><a href="#barbearias" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Barbearias</a></li>
-              <li><a href="#servicos" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Servicos</a></li>
+              <li><a href="#servicos" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Serviços</a></li>
               <li><a href="#depoimentos" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Depoimentos</a></li>
             </ul>
           </div>
@@ -50,15 +50,15 @@ export function LandingFooter() {
               </li>
               <li className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Phone className="w-4 h-4 text-primary flex-shrink-0" />
-                (11) 99999-9999
+                (17) 99623-1865
               </li>
               <li className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Mail className="w-4 h-4 text-primary flex-shrink-0" />
-                contato@barberpro.com
+                contato@barberflow.com
               </li>
               <li className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Instagram className="w-4 h-4 text-primary flex-shrink-0" />
-                @barberpro
+                @barberflow
               </li>
             </ul>
           </div>
@@ -66,7 +66,7 @@ export function LandingFooter() {
 
         <div className="mt-10 pt-6 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-xs text-muted-foreground">
-            2025 BarberPro. Todos os direitos reservados.
+            2026 BarberFlow. Todos os direitos reservados.
           </p>
           <div className="flex items-center gap-4">
             <Link href="#" className="text-xs text-muted-foreground hover:text-foreground transition-colors">

@@ -39,13 +39,13 @@ export function LandingServices() {
         {/* Header */}
         <div className="max-w-2xl mx-auto text-center mb-14">
           <span className="text-sm font-semibold text-primary uppercase tracking-widest">
-            Nossos Servicos
+            Nossos Serviços
           </span>
           <h2 className="font-heading text-3xl sm:text-4xl font-bold text-foreground mt-3 text-balance">
-            Servicos pensados para voce
+            Serviços pensados para você
           </h2>
           <p className="mt-4 text-muted-foreground leading-relaxed">
-            Cada detalhe importa. Nossos servicos combinam tecnica, estilo e cuidado para uma experiencia unica.
+            Cada detalhe importa. Nossos serviços combinam técnica, estilo e cuidado para uma experiência única.
           </p>
         </div>
 

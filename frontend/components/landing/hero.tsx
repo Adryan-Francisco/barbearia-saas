@@ -5,18 +5,20 @@ import { Star, Clock, MapPin } from "lucide-react"
 
 export function LandingHero() {
   return (
-    <section className="relative min-h-[90vh] flex items-center pt-16">
-      {/* Background Image */}
+    <section className="relative min-h-[90vh] flex items-center pt-16 overflow-hidden">
+      {/* Background Image - Full coverage */}
       <div className="absolute inset-0">
         <Image
-          src="/placeholder.svg"
+          src="/barbearia.png"
           alt="Interior da barbearia BarberPro"
           fill
-          className="object-cover"
+          className="object-cover object-center"
           priority
         />
-        <div className="absolute inset-0 bg-gradient-to-r from-background via-background/85 to-background/40" />
       </div>
+
+      {/* Gradient overlay - more transparent to show image */}
+      <div className="absolute inset-0 bg-gradient-to-r from-background/90 via-background/70 to-transparent z-0" />
 
       <div className="relative z-10 mx-auto max-w-7xl px-6 py-20 w-full">
         <div className="max-w-2xl">
@@ -35,9 +37,9 @@ export function LandingHero() {
             Encontre a barbearia perfeita para voce
           </h1>
 
-          <p className="mt-5 text-lg text-muted-foreground max-w-lg leading-relaxed">
-            Descubra as melhores barbearias da sua regiao, compare servicos e agende online 
-            com praticidade. Tudo em um so lugar.
+          <p className="mt-5 text-lg text-muted-foreground leading-relaxed">
+            Descubra as melhores barbearias da sua região, compare serviços e agende online 
+            com praticidade. Tudo em um só lugar.
           </p>
 
           {/* CTA */}
@@ -58,7 +60,7 @@ export function LandingHero() {
             </div>
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <MapPin className="w-4 h-4 text-primary" />
-              <span>Barbearias em toda Sao Paulo</span>
+              <span>Barbearias em toda ão Paulo</span>
             </div>
           </div>
         </div>

@@ -31,7 +31,7 @@ export default function BarberSignupPage() {
       email,
       phone,
       password,
-    }).then((result) => {
+    }).then((result: any) => {
       if (result.error) {
         toast({
           title: "Erro no cadastro",
