@@ -15,108 +15,45 @@ async function main() {
     await prisma.barbershop.deleteMany();
     await prisma.user.deleteMany();
 
-    // Criar usuários
-    console.log('👤 Criando usuários...');
-    const user = await prisma.user.create({
+    // Criar usuários de teste
+    console.log('👤 Criando usuários de teste...');
+    
+    // Cliente
+    const client = await prisma.user.create({
       data: {
-        id: 'a9d6753e-893d-4472-bbbc-ad34cfa468eb',
-        name: 'Adryan',
-        phone: '17996231865',
-        password: '$2a$10$ogcg.6N1RVh4S/sCuRScveO/mkdlAr4HzvrusV3DXmoURaWswQuGS',
+        name: 'João Cliente',
+        phone: '11987654321',
+        email: 'cliente@test.com',
+        password: '$2a$10$ogcg.6N1RVh4S/sCuRScveO/mkdlAr4HzvrusV3DXmoURaWswQuGS', // senha: 123456
         role: 'client'
       }
     });
-    console.log('✅ Usuário criado:', user.name);
+    console.log('✅ Cliente criado:', client.name);
 
-    // Criar barbearias
-    console.log('💈 Criando barbearias...');
-    const barbershop1 = await prisma.barbershop.create({
+    // Barbeiro/Dono de barbearia
+    const barbershopOwner = await prisma.user.create({
       data: {
-        id: 'barber-001',
-        name: 'BarberPro Premium',
-        phone: '1133334444',
-        address: 'Av. Paulista, 1000 - São Paulo, SP',
-        latitude: '-23.5505',
-        longitude: '-46.6333',
-        rating: 4.8
+        name: 'Carlos Barbeiro',
+        phone: '11987654322',
+        email: 'barbeiro@test.com',
+        password: '$2a$10$ogcg.6N1RVh4S/sCuRScveO/mkdlAr4HzvrusV3DXmoURaWswQuGS', // senha: 123456
+        role: 'barbershop_owner'
       }
     });
+    console.log('✅ Barbeiro criado:', barbershopOwner.name);
 
-    const barbershop2 = await prisma.barbershop.create({
-      data: {
-        id: 'barber-002',
-        name: 'Barba & Tesoura',
-        phone: '1144445555',
-        address: 'Rua Augusta, 500 - São Paulo, SP',
-        latitude: '-23.5555',
-        longitude: '-46.6555',
-        rating: 4.7
-      }
-    });
-    console.log('✅ Barbearias criadas');
-
-    // Criar serviços
-    console.log('🔧 Criando serviços...');
-    const service1 = await prisma.service.create({
-      data: {
-        id: 'service-001',
-        barbershopId: barbershop1.id,
-        name: 'Corte de Cabelo',
-        description: 'Corte clássico de cabelo',
-        price: 45,
-        duration: 30
-      }
-    });
-
-    const service2 = await prisma.service.create({
-      data: {
-        id: 'service-002',
-        barbershopId: barbershop1.id,
-        name: 'Corte + Barba',
-        description: 'Corte de cabelo + aparar a barba',
-        price: 65,
-        duration: 45
-      }
-    });
-
-    const service3 = await prisma.service.create({
-      data: {
-        id: 'service-003',
-        barbershopId: barbershop2.id,
-        name: 'Corte de Cabelo',
-        description: 'Corte clássico de cabelo',
-        price: 40,
-        duration: 30
-      }
-    });
-    console.log('✅ Serviços criados');
-
-    // Criar agendamento
-    console.log('📅 Criando agendamentos...');
-    const appointment = await prisma.appointment.create({
-      data: {
-        id: 'f6092ace-949a-4da0-b47a-3962a27fb9c6',
-        barbershopId: barbershop1.id,
-        clientId: user.id,
-        serviceId: service1.id,
-        appointmentDate: new Date('2026-02-09T09:30:00'),
-        appointmentTime: '09:30',
-        status: 'confirmed'
-      }
-    });
-    console.log('✅ Agendamento criado');
-
-    console.log('\n🎉 Seed concluído com sucesso!');
-    console.log(`
-📊 Resumo:
-  - Usuários: 1
-  - Barbearias: 2
-  - Serviços: 3
-  - Agendamentos: 1
-    `);
+    console.log('\n✅ Seed concluído com sucesso!');
+    console.log('\n📋 Usuários de teste criados:');
+    console.log(`  Cliente: ${client.phone} / ${client.email}`);
+    console.log(`  Barbeiro: ${barbershopOwner.phone} / ${barbershopOwner.email}`);
+    console.log(`  Senha de teste: 123456`);
+    console.log('\n💡 O barbeiro pode agora cadastrar sua barbearia através da API!');
+    
   } catch (error) {
     console.error('❌ Erro ao executar seed:', error);
-    throw error;
+    process.exit(1);
+  } finally {
+    await prisma.$disconnect();
   }
 }
 

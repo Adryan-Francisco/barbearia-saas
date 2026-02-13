@@ -18,6 +18,7 @@ model User {
   password  String
   role      String   @default("client") // "client" | "barbershop_owner" | "admin"
   
+  barbershops   Barbershop[]
   appointments  Appointment[]
   reviews       Review[]
   favorites     Favorite[]
@@ -36,7 +37,9 @@ model Barbershop {
   latitude  String?
   longitude String?
   rating    Float?   @default(0)
+  ownerId   String
   
+  owner         User           @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   services      Service[]
   appointments  Appointment[]
   reviews       Review[]
@@ -46,6 +49,7 @@ model Barbershop {
   updatedAt DateTime @updatedAt
 
   @@map("barbershops")
+  @@index([ownerId])
 }
 
 model Service {

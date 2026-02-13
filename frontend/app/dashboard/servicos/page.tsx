@@ -24,100 +24,15 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Plus, MoreVertical, Clock, DollarSign, Scissors, Sparkles } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useState, useEffect } from "react"
 
 interface Service {
-  id: number
+  id: string
   name: string
   description: string
-  price: string
-  duration: string
-  category: string
-  active: boolean
-  popular: boolean
+  price: number
+  duration: number
 }
-
-const services: Service[] = [
-  {
-    id: 1,
-    name: "Corte Degrade",
-    description: "Corte masculino com degrade nas laterais e nuca",
-    price: "R$ 45,00",
-    duration: "45 min",
-    category: "Corte",
-    active: true,
-    popular: true,
-  },
-  {
-    id: 2,
-    name: "Corte + Barba",
-    description: "Combo de corte de cabelo com aparacao e design de barba",
-    price: "R$ 70,00",
-    duration: "60 min",
-    category: "Combo",
-    active: true,
-    popular: true,
-  },
-  {
-    id: 3,
-    name: "Barba",
-    description: "Aparacao e design de barba com toalha quente",
-    price: "R$ 35,00",
-    duration: "30 min",
-    category: "Barba",
-    active: true,
-    popular: false,
-  },
-  {
-    id: 4,
-    name: "Corte Social",
-    description: "Corte classico social masculino com tesoura",
-    price: "R$ 50,00",
-    duration: "45 min",
-    category: "Corte",
-    active: true,
-    popular: false,
-  },
-  {
-    id: 5,
-    name: "Sobrancelha",
-    description: "Design e aparacao de sobrancelha masculina",
-    price: "R$ 15,00",
-    duration: "15 min",
-    category: "Acabamento",
-    active: true,
-    popular: false,
-  },
-  {
-    id: 6,
-    name: "Corte Infantil",
-    description: "Corte de cabelo para criancas ate 12 anos",
-    price: "R$ 35,00",
-    duration: "30 min",
-    category: "Corte",
-    active: true,
-    popular: false,
-  },
-  {
-    id: 7,
-    name: "Pigmentacao de Barba",
-    description: "Pigmentacao temporaria para preencher falhas na barba",
-    price: "R$ 80,00",
-    duration: "45 min",
-    category: "Tratamento",
-    active: true,
-    popular: false,
-  },
-  {
-    id: 8,
-    name: "Relaxamento Capilar",
-    description: "Tratamento para alisar e relaxar os fios",
-    price: "R$ 120,00",
-    duration: "90 min",
-    category: "Tratamento",
-    active: false,
-    popular: false,
-  },
-]
 
 function getCategoryColor(category: string) {
   switch (category) {
@@ -137,6 +52,76 @@ function getCategoryColor(category: string) {
 }
 
 export default function ServicosPage() {
+  const [services, setServices] = useState<Service[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetchServices()
+  }, [])
+
+  async function fetchServices() {
+    try {
+      setLoading(true)
+      const token = localStorage.getItem("token")
+      if (!token) {
+        console.warn("Token não encontrado")
+        setLoading(false)
+        return
+      }
+
+      // Get barbershop
+      const barbershopRes = await fetch("/api/barbershops/me", {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      
+      if (!barbershopRes.ok) {
+        throw new Error("Erro ao buscar barbearia")
+      }
+      
+      const barbershop = await barbershopRes.json()
+
+      if (!barbershop?.id) {
+        console.warn("Barbearia não encontrada")
+        setLoading(false)
+        return
+      }
+
+      // Get services
+      const servicesRes = await fetch(`/api/barbershops/${barbershop.id}/services`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      
+      if (!servicesRes.ok) {
+        throw new Error("Erro ao buscar serviços")
+      }
+      
+      const data = await servicesRes.json()
+      setServices(Array.isArray(data) ? data : [])
+    } catch (error) {
+      console.error("Erro ao buscar serviços:", error)
+      setServices([])
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (loading) {
+    return (
+      <>
+        <AppHeader title="Servicos" description="Gerencie os servicos oferecidos" />
+        <div className="flex-1 overflow-auto p-6">
+          <div className="animate-pulse">
+            <div className="h-12 bg-secondary rounded mb-6" />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {[...Array(6)].map((_, i) => (
+                <div key={i} className="h-64 bg-secondary rounded" />
+              ))}
+            </div>
+          </div>
+        </div>
+      </>
+    )
+  }
   return (
     <>
       <AppHeader title="Servicos" description="Gerencie os servicos oferecidos" />
@@ -146,10 +131,7 @@ export default function ServicosPage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Badge variant="secondary" className="bg-secondary text-secondary-foreground">
-                {services.filter((s) => s.active).length} ativos
-              </Badge>
-              <Badge variant="secondary" className="bg-secondary text-muted-foreground">
-                {services.filter((s) => !s.active).length} inativos
+                {services.length} serviços
               </Badge>
             </div>
             <Dialog>
@@ -169,11 +151,17 @@ export default function ServicosPage() {
                 <div className="flex flex-col gap-4 py-4">
                   <div className="flex flex-col gap-2">
                     <Label className="text-foreground">Nome do servico</Label>
-                    <Input placeholder="Ex: Corte Degrade" className="bg-secondary border-border text-foreground" />
+                    <Input
+                      placeholder="Ex: Corte Degrade"
+                      className="bg-secondary border-border text-foreground"
+                    />
                   </div>
                   <div className="flex flex-col gap-2">
                     <Label className="text-foreground">Descricao</Label>
-                    <Input placeholder="Descricao breve do servico" className="bg-secondary border-border text-foreground" />
+                    <Input
+                      placeholder="Descricao breve do servico"
+                      className="bg-secondary border-border text-foreground"
+                    />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="flex flex-col gap-2">
@@ -187,78 +175,79 @@ export default function ServicosPage() {
                   </div>
                 </div>
                 <DialogFooter>
-                  <Button variant="secondary" className="bg-secondary text-secondary-foreground">Cancelar</Button>
-                  <Button className="bg-primary text-primary-foreground hover:bg-primary/90">Salvar</Button>
+                  <Button variant="secondary" className="bg-secondary text-secondary-foreground">
+                    Cancelar
+                  </Button>
+                  <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
+                    Salvar
+                  </Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
           </div>
 
           {/* Services grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {services.map((service) => (
-              <Card
-                key={service.id}
-                className={cn(
-                  "bg-card border-border transition-colors hover:border-primary/30",
-                  !service.active && "opacity-60"
-                )}
-              >
-                <CardContent className="p-5">
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      <Badge className={cn("text-xs", getCategoryColor(service.category))}>
-                        {service.category}
-                      </Badge>
-                      {service.popular && (
+          {services.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+              <Scissors className="w-10 h-10 mb-3 opacity-50" />
+              <p className="text-sm">Nenhum serviço cadastrado</p>
+              <p className="text-xs">Crie seu primeiro serviço para começar</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {services.map((service) => (
+                <Card key={service.id} className="bg-card border-border transition-colors hover:border-primary/30">
+                  <CardContent className="p-5">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-center gap-2">
                         <Badge className="bg-primary/10 text-primary border-primary/20 text-xs">
-                          <Sparkles className="w-3 h-3 mr-1" />
-                          Popular
+                          <Scissors className="w-3 h-3 mr-1" />
+                          Servico
                         </Badge>
-                      )}
+                      </div>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-muted-foreground hover:text-foreground h-8 w-8"
+                            aria-label="Opcoes do servico"
+                          >
+                            <MoreVertical className="w-4 h-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="bg-card border-border">
+                          <DropdownMenuItem className="text-foreground">Editar</DropdownMenuItem>
+                          <DropdownMenuItem className="text-foreground">Duplicar</DropdownMenuItem>
+                          <DropdownMenuItem className="text-destructive">Excluir</DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground h-8 w-8" aria-label="Opcoes do servico">
-                          <MoreVertical className="w-4 h-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="bg-card border-border">
-                        <DropdownMenuItem className="text-foreground">Editar</DropdownMenuItem>
-                        <DropdownMenuItem className="text-foreground">Duplicar</DropdownMenuItem>
-                        <DropdownMenuItem className="text-destructive">Excluir</DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
 
-                  <h3 className="text-base font-heading font-semibold text-foreground mb-1">
-                    {service.name}
-                  </h3>
-                  <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
-                    {service.description}
-                  </p>
+                    <h3 className="text-base font-heading font-semibold text-foreground mb-1">
+                      {service.name}
+                    </h3>
+                    <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
+                      {service.description}
+                    </p>
 
-                  <div className="flex items-center justify-between pt-3 border-t border-border">
-                    <div className="flex items-center gap-4">
-                      <span className="flex items-center gap-1 text-sm font-bold text-primary">
-                        <DollarSign className="w-4 h-4" />
-                        {service.price}
-                      </span>
-                      <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                        <Clock className="w-3 h-3" />
-                        {service.duration}
-                      </span>
+                    <div className="flex items-center justify-between pt-3 border-t border-border">
+                      <div className="flex items-center gap-4">
+                        <span className="flex items-center gap-1 text-sm font-bold text-primary">
+                          <DollarSign className="w-4 h-4" />
+                          R$ {service.price.toFixed(2)}
+                        </span>
+                        <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <Clock className="w-3 h-3" />
+                          {service.duration} min
+                        </span>
+                      </div>
                     </div>
-                    <Switch
-                      checked={service.active}
-                      className="data-[state=checked]:bg-primary"
-                      aria-label={`${service.active ? "Desativar" : "Ativar"} ${service.name}`}
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </>

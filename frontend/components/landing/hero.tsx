@@ -10,7 +10,7 @@ export function LandingHero() {
       <div className="absolute inset-0">
         <Image
           src="/barbearia.png"
-          alt="Interior da barbearia BarberPro"
+          alt="Interior da barbearia BarberFlow"
           fill
           className="object-cover object-center"
           priority

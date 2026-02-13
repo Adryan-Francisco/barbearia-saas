@@ -11,6 +11,7 @@ import { paginationMiddleware } from './utils/pagination';
 import authRoutes from './routes/authRoutes';
 import schedulingRoutes from './routes/schedulingRoutes';
 import barbershopRoutes from './routes/barbershopRoutes';
+import serviceRoutes from './routes/serviceRoutes';
 import reviewRoutes from './routes/reviewRoutes';
 import analyticsRoutes from './routes/analyticsRoutes';
 import paymentRoutes from './routes/paymentRoutes';
@@ -73,7 +74,8 @@ websocketService.initialize(httpServer);
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/scheduling', schedulingRoutes);
-app.use('/api/barbershop', barbershopRoutes);
+app.use('/api/barbershops', barbershopRoutes);
+app.use('/api/barbershops', serviceRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/payments', paymentRoutes);

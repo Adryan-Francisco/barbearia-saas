@@ -8,7 +8,7 @@ const _inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
 const _spaceGrotesk = Space_Grotesk({ subsets: ['latin'], variable: '--font-space-grotesk' })
 
 export const metadata: Metadata = {
-  title: 'BarberPro - Gestao de Barbearia',
+  title: 'BarberFlow - Gestao de Barbearia',
   description: 'Plataforma completa para gestao da sua barbearia. Agendamentos, clientes, servicos e muito mais.',
 }
 

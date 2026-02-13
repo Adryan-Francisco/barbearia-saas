@@ -31,107 +31,126 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Plus, Search, MoreHorizontal, Phone, Mail, Calendar } from "lucide-react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 
-const clients = [
-  {
-    id: 1,
-    name: "Rafael Santos",
-    initials: "RS",
-    email: "rafael@email.com",
-    phone: "(11) 99123-4567",
-    visits: 24,
-    lastVisit: "02/02/2026",
-    totalSpent: "R$ 2.016",
-    status: "ativo" as const,
-  },
-  {
-    id: 2,
-    name: "Lucas Oliveira",
-    initials: "LO",
-    email: "lucas@email.com",
-    phone: "(11) 98765-4321",
-    visits: 18,
-    lastVisit: "01/28/2026",
-    totalSpent: "R$ 1.512",
-    status: "ativo" as const,
-  },
-  {
-    id: 3,
-    name: "Marcos Silva",
-    initials: "MS",
-    email: "marcos@email.com",
-    phone: "(11) 91234-5678",
-    visits: 12,
-    lastVisit: "01/15/2026",
-    totalSpent: "R$ 1.008",
-    status: "ativo" as const,
-  },
-  {
-    id: 4,
-    name: "Andre Costa",
-    initials: "AC",
-    email: "andre@email.com",
-    phone: "(11) 93456-7890",
-    visits: 8,
-    lastVisit: "12/20/2025",
-    totalSpent: "R$ 672",
-    status: "inativo" as const,
-  },
-  {
-    id: 5,
-    name: "Bruno Ferreira",
-    initials: "BF",
-    email: "bruno@email.com",
-    phone: "(11) 97890-1234",
-    visits: 31,
-    lastVisit: "02/05/2026",
-    totalSpent: "R$ 2.604",
-    status: "ativo" as const,
-  },
-  {
-    id: 6,
-    name: "Diego Mendes",
-    initials: "DM",
-    email: "diego@email.com",
-    phone: "(11) 95678-9012",
-    visits: 5,
-    lastVisit: "11/10/2025",
-    totalSpent: "R$ 420",
-    status: "inativo" as const,
-  },
-  {
-    id: 7,
-    name: "Felipe Rocha",
-    initials: "FR",
-    email: "felipe@email.com",
-    phone: "(11) 92345-6789",
-    visits: 15,
-    lastVisit: "02/01/2026",
-    totalSpent: "R$ 1.260",
-    status: "ativo" as const,
-  },
-  {
-    id: 8,
-    name: "Gabriel Lima",
-    initials: "GL",
-    email: "gabriel@email.com",
-    phone: "(11) 96789-0123",
-    visits: 9,
-    lastVisit: "01/22/2026",
-    totalSpent: "R$ 756",
-    status: "ativo" as const,
-  },
-]
+interface Client {
+  id: string
+  client_name: string
+  client_phone: string
+  total_appointments: number
+  completed_appointments: number
+  cancelled_appointments: number
+  total_spent: number
+  last_appointment_date: string
+}
+
+function getInitials(name: string): string {
+  return name
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2)
+}
 
 export default function ClientesPage() {
   const [search, setSearch] = useState("")
+  const [clients, setClients] = useState<Client[]>([])
+  const [loading, setLoading] = useState(true)
+  const [stats, setStats] = useState({
+    total: 0,
+    active: 0,
+    newThisMonth: 0,
+  })
+
+  useEffect(() => {
+    fetchClients()
+  }, [])
+
+  async function fetchClients() {
+    try {
+      setLoading(true)
+      const token = localStorage.getItem("token")
+      if (!token) {
+        console.warn("Token não encontrado")
+        setLoading(false)
+        return
+      }
+
+      // Get barbershop
+      const barbershopRes = await fetch("/api/barbershops/me", {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      
+      if (!barbershopRes.ok) {
+        throw new Error("Erro ao buscar barbearia")
+      }
+      
+      const barbershop = await barbershopRes.json()
+
+      if (!barbershop?.id) {
+        console.warn("Barbearia não encontrada")
+        setLoading(false)
+        return
+      }
+
+      // Get clients
+      const clientsRes = await fetch(`/api/analytics/${barbershop.id}/clients`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      
+      if (!clientsRes.ok) {
+        throw new Error("Erro ao buscar clientes")
+      }
+      
+      const data = await clientsRes.json()
+
+      const clientsArray = data.clients || []
+      setClients(clientsArray)
+
+      // Calculate stats
+      const now = new Date()
+      const thisMonth = clientsArray.filter((c: Client) => {
+        if (!c.last_appointment_date) return false
+        const lastVisit = new Date(c.last_appointment_date)
+        return !isNaN(lastVisit.getTime()) && lastVisit.getMonth() === now.getMonth() && lastVisit.getFullYear() === now.getFullYear()
+      }).length
+
+      setStats({
+        total: clientsArray.length,
+        active: clientsArray.filter((c: Client) => c.total_appointments > 0).length,
+        newThisMonth: thisMonth,
+      })
+    } catch (error) {
+      console.error("Erro ao buscar clientes:", error)
+      setClients([])
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const filteredClients = clients.filter((c) =>
-    c.name.toLowerCase().includes(search.toLowerCase()) ||
-    c.email.toLowerCase().includes(search.toLowerCase()) ||
-    c.phone.includes(search)
+    c.client_name.toLowerCase().includes(search.toLowerCase()) ||
+    c.client_phone.includes(search)
   )
+
+  if (loading) {
+    return (
+      <>
+        <AppHeader title="Clientes" description="Gerencie seus clientes e historico" />
+        <div className="flex-1 overflow-auto p-6">
+          <div className="animate-pulse space-y-4">
+            <div className="grid grid-cols-3 gap-4">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="h-24 bg-secondary rounded" />
+              ))}
+            </div>
+            <div className="h-64 bg-secondary rounded" />
+          </div>
+        </div>
+      </>
+    )
+  }
 
   return (
     <>
@@ -143,19 +162,19 @@ export default function ClientesPage() {
             <Card className="bg-card border-border">
               <CardContent className="p-5">
                 <p className="text-sm text-muted-foreground">Total de Clientes</p>
-                <p className="text-2xl font-heading font-bold text-foreground mt-1">326</p>
+                <p className="text-2xl font-heading font-bold text-foreground mt-1">{stats.total}</p>
               </CardContent>
             </Card>
             <Card className="bg-card border-border">
               <CardContent className="p-5">
                 <p className="text-sm text-muted-foreground">Clientes Ativos</p>
-                <p className="text-2xl font-heading font-bold text-emerald-400 mt-1">289</p>
+                <p className="text-2xl font-heading font-bold text-emerald-400 mt-1">{stats.active}</p>
               </CardContent>
             </Card>
             <Card className="bg-card border-border">
               <CardContent className="p-5">
                 <p className="text-sm text-muted-foreground">Novos este Mes</p>
-                <p className="text-2xl font-heading font-bold text-primary mt-1">14</p>
+                <p className="text-2xl font-heading font-bold text-primary mt-1">{stats.newThisMonth}</p>
               </CardContent>
             </Card>
           </div>
@@ -165,7 +184,7 @@ export default function ClientesPage() {
             <div className="relative w-full sm:w-80">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
-                placeholder="Buscar por nome, email ou telefone..."
+                placeholder="Buscar por nome ou telefone..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="pl-9 bg-secondary border-border text-foreground placeholder:text-muted-foreground"
@@ -187,23 +206,46 @@ export default function ClientesPage() {
                 </DialogHeader>
                 <div className="flex flex-col gap-4 py-4">
                   <div className="flex flex-col gap-2">
-                    <Label htmlFor="name" className="text-foreground">Nome completo</Label>
-                    <Input id="name" placeholder="Nome do cliente" className="bg-secondary border-border text-foreground" />
+                    <Label htmlFor="name" className="text-foreground">
+                      Nome completo
+                    </Label>
+                    <Input
+                      id="name"
+                      placeholder="Nome do cliente"
+                      className="bg-secondary border-border text-foreground"
+                    />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="flex flex-col gap-2">
-                      <Label htmlFor="email" className="text-foreground">Email</Label>
-                      <Input id="email" type="email" placeholder="email@exemplo.com" className="bg-secondary border-border text-foreground" />
+                      <Label htmlFor="email" className="text-foreground">
+                        Email
+                      </Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        placeholder="email@exemplo.com"
+                        className="bg-secondary border-border text-foreground"
+                      />
                     </div>
                     <div className="flex flex-col gap-2">
-                      <Label htmlFor="phone" className="text-foreground">Telefone</Label>
-                      <Input id="phone" placeholder="(11) 99999-9999" className="bg-secondary border-border text-foreground" />
+                      <Label htmlFor="phone" className="text-foreground">
+                        Telefone
+                      </Label>
+                      <Input
+                        id="phone"
+                        placeholder="(11) 99999-9999"
+                        className="bg-secondary border-border text-foreground"
+                      />
                     </div>
                   </div>
                 </div>
                 <DialogFooter>
-                  <Button variant="secondary" className="bg-secondary text-secondary-foreground">Cancelar</Button>
-                  <Button className="bg-primary text-primary-foreground hover:bg-primary/90">Cadastrar</Button>
+                  <Button variant="secondary" className="bg-secondary text-secondary-foreground">
+                    Cancelar
+                  </Button>
+                  <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
+                    Cadastrar
+                  </Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
@@ -216,7 +258,7 @@ export default function ClientesPage() {
                 <TableHeader>
                   <TableRow className="border-border hover:bg-transparent">
                     <TableHead className="text-muted-foreground">Cliente</TableHead>
-                    <TableHead className="text-muted-foreground hidden md:table-cell">Contato</TableHead>
+                    <TableHead className="text-muted-foreground hidden md:table-cell">Telefone</TableHead>
                     <TableHead className="text-muted-foreground hidden sm:table-cell">Visitas</TableHead>
                     <TableHead className="text-muted-foreground hidden lg:table-cell">Ultima Visita</TableHead>
                     <TableHead className="text-muted-foreground hidden lg:table-cell">Total Gasto</TableHead>
@@ -225,66 +267,79 @@ export default function ClientesPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredClients.map((client) => (
-                    <TableRow key={client.id} className="border-border hover:bg-secondary/50">
-                      <TableCell>
-                        <div className="flex items-center gap-3">
-                          <Avatar className="w-9 h-9">
-                            <AvatarFallback className="bg-primary/10 text-primary text-xs font-medium">
-                              {client.initials}
-                            </AvatarFallback>
-                          </Avatar>
-                          <span className="text-sm font-medium text-foreground">{client.name}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="hidden md:table-cell">
-                        <div className="flex flex-col gap-0.5">
-                          <span className="text-xs text-muted-foreground flex items-center gap-1">
-                            <Mail className="w-3 h-3" /> {client.email}
-                          </span>
-                          <span className="text-xs text-muted-foreground flex items-center gap-1">
-                            <Phone className="w-3 h-3" /> {client.phone}
-                          </span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="hidden sm:table-cell">
-                        <span className="text-sm text-foreground">{client.visits}</span>
-                      </TableCell>
-                      <TableCell className="hidden lg:table-cell">
-                        <span className="text-sm text-muted-foreground flex items-center gap-1">
-                          <Calendar className="w-3 h-3" /> {client.lastVisit}
-                        </span>
-                      </TableCell>
-                      <TableCell className="hidden lg:table-cell">
-                        <span className="text-sm font-medium text-foreground">{client.totalSpent}</span>
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          className={
-                            client.status === "ativo"
-                              ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-xs"
-                              : "bg-secondary text-muted-foreground border-border text-xs"
-                          }
-                        >
-                          {client.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground h-8 w-8" aria-label="Opcoes">
-                              <MoreHorizontal className="w-4 h-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="bg-card border-border">
-                            <DropdownMenuItem className="text-foreground">Ver perfil</DropdownMenuItem>
-                            <DropdownMenuItem className="text-foreground">Editar</DropdownMenuItem>
-                            <DropdownMenuItem className="text-foreground">Agendar</DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                  {filteredClients.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                        Nenhum cliente encontrado
                       </TableCell>
                     </TableRow>
-                  ))}
+                  ) : (
+                    filteredClients.map((client) => (
+                      <TableRow key={client.id} className="border-border hover:bg-secondary/50">
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <Avatar className="w-9 h-9">
+                              <AvatarFallback className="bg-primary/10 text-primary text-xs font-medium">
+                                {getInitials(client.client_name)}
+                              </AvatarFallback>
+                            </Avatar>
+                            <span className="text-sm font-medium text-foreground">{client.client_name}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="hidden md:table-cell">
+                          <span className="text-xs text-muted-foreground flex items-center gap-1">
+                            <Phone className="w-3 h-3" /> {client.client_phone}
+                          </span>
+                        </TableCell>
+                        <TableCell className="hidden sm:table-cell">
+                          <span className="text-sm text-foreground">{client.completed_appointments}</span>
+                        </TableCell>
+                        <TableCell className="hidden lg:table-cell">
+                          <span className="text-sm text-muted-foreground flex items-center gap-1">
+                            <Calendar className="w-3 h-3" />
+                            {client.last_appointment_date
+                              ? new Date(client.last_appointment_date).toLocaleDateString("pt-BR")
+                              : "-"}
+                          </span>
+                        </TableCell>
+                        <TableCell className="hidden lg:table-cell">
+                          <span className="text-sm font-medium text-foreground">
+                            R$ {client.total_spent.toFixed(2)}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            className={
+                              client.total_appointments > 0
+                                ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-xs"
+                                : "bg-secondary text-muted-foreground border-border text-xs"
+                            }
+                          >
+                            {client.total_appointments > 0 ? "ativo" : "inativo"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="text-muted-foreground hover:text-foreground h-8 w-8"
+                                aria-label="Opcoes"
+                              >
+                                <MoreHorizontal className="w-4 h-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="bg-card border-border">
+                              <DropdownMenuItem className="text-foreground">Ver perfil</DropdownMenuItem>
+                              <DropdownMenuItem className="text-foreground">Editar</DropdownMenuItem>
+                              <DropdownMenuItem className="text-foreground">Agendar</DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
                 </TableBody>
               </Table>
             </CardContent>

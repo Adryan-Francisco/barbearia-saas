@@ -49,6 +49,51 @@ export async function register(req: Request, res: Response, next: NextFunction) 
   }
 }
 
+export async function barbershopRegister(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { name, phone, password } = req.body;
+
+    if (!name || !phone || !password) {
+      throw new AppError('Nome, telefone e senha são obrigatórios', 400);
+    }
+
+    // Verificar se telefone já existe
+    const existingUser = await prisma.user.findUnique({
+      where: { phone }
+    });
+
+    if (existingUser) {
+      throw new AppError('Telefone já registrado', 409);
+    }
+
+    const hashedPassword = await hashPassword(password);
+
+    const user = await prisma.user.create({
+      data: {
+        name,
+        phone,
+        password: hashedPassword,
+        role: 'barbershop_owner'
+      }
+    });
+
+    const token = generateToken({ id: user.id, role: user.role });
+
+    res.status(201).json({
+      message: 'Barbeiro registrado com sucesso',
+      token,
+      user: {
+        id: user.id,
+        name: user.name,
+        phone: user.phone,
+        role: user.role
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
 export async function login(req: Request, res: Response, next: NextFunction) {
   try {
     const { phone, password } = req.body;

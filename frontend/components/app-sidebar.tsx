@@ -15,7 +15,7 @@ import {
   Bell,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 
@@ -34,6 +34,31 @@ const bottomItems = [
 export function AppSidebar() {
   const pathname = usePathname()
   const [collapsed, setCollapsed] = useState(false)
+  const [barbershopName, setBarbershopName] = useState("BarberFlow")
+
+  useEffect(() => {
+    fetchBarbershopName()
+  }, [])
+
+  async function fetchBarbershopName() {
+    try {
+      const token = localStorage.getItem("token")
+      if (!token) return
+
+      const res = await fetch("/api/barbershops/me", {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+
+      if (!res.ok) return
+
+      const barbershop = await res.json()
+      if (barbershop?.name) {
+        setBarbershopName(barbershop.name)
+      }
+    } catch (error) {
+      console.error("Erro ao buscar barbearia:", error)
+    }
+  }
 
   return (
     <aside
@@ -48,8 +73,8 @@ export function AppSidebar() {
           <Scissors className="w-5 h-5 text-primary-foreground" />
         </div>
         {!collapsed && (
-          <span className="font-heading text-lg font-bold text-sidebar-foreground tracking-tight">
-            BarberPro
+          <span className="font-heading text-sm font-bold text-sidebar-foreground tracking-tight line-clamp-2 max-w-[180px]">
+            {barbershopName}
           </span>
         )}
       </div>
@@ -114,8 +139,8 @@ export function AppSidebar() {
           </Avatar>
           {!collapsed && (
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-sidebar-foreground truncate">Joao Pedro</p>
-              <p className="text-xs text-muted-foreground truncate">Administrador</p>
+              <p className="text-sm font-medium text-sidebar-foreground truncate">{barbershopName}</p>
+              <p className="text-xs text-muted-foreground truncate">Barbearia</p>
             </div>
           )}
           {!collapsed && (

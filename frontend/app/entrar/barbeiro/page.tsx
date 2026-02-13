@@ -12,6 +12,22 @@ import { Card, CardContent } from "@/components/ui/card"
 import { authAPI } from "@/lib/api"
 import { useToast } from "@/hooks/use-toast"
 
+interface ApiResponse<T> {
+  data?: T
+  error?: {
+    message: string
+  }
+}
+
+interface LoginResponse {
+  token: string
+  user: {
+    id: string
+    email: string
+    name: string
+  }
+}
+
 export default function BarberLoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
@@ -24,7 +40,7 @@ export default function BarberLoginPage() {
     e.preventDefault()
     setIsLoading(true)
     
-    authAPI.barbershopLogin(email, password).then((result) => {
+    authAPI.barbershopLogin(email, password).then((result: any) => {
       if (result.error) {
         toast({
           title: "Erro no login",
@@ -75,7 +91,7 @@ export default function BarberLoginPage() {
           <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary">
             <Scissors className="w-5 h-5 text-primary-foreground" />
           </div>
-          <span className="font-heading text-xl font-bold text-foreground">BarberPro</span>
+          <span className="font-heading text-xl font-bold text-foreground">BarberFlow</span>
         </div>
 
         <Card className="bg-card border-border">

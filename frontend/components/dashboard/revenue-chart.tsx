@@ -21,27 +21,86 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart"
+import { useEffect, useState } from "react"
 
-const revenueData = [
-  { month: "Jan", receita: 8200, servicos: 98 },
-  { month: "Fev", receita: 9100, servicos: 112 },
-  { month: "Mar", receita: 10500, servicos: 128 },
-  { month: "Abr", receita: 9800, servicos: 118 },
-  { month: "Mai", receita: 11200, servicos: 135 },
-  { month: "Jun", receita: 10800, servicos: 130 },
-  { month: "Jul", receita: 12450, servicos: 148 },
-]
+interface RevenueData {
+  total_revenue: number
+  confirmed: number
+}
 
 export function RevenueChart() {
+  const [revenue, setRevenue] = useState<RevenueData | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchRevenue = async () => {
+      try {
+        const token = localStorage.getItem('token')
+        if (!token) return
+
+        // Primeiro obtém a barbearia do usuário
+        const barbershopRes = await fetch('http://localhost:3001/api/barbershops/me', {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+
+        if (!barbershopRes.ok) return
+
+        const barbershop = await barbershopRes.json()
+
+        // Depois obtém as estatísticas
+        const statsRes = await fetch(
+          `http://localhost:3001/api/barbershops/${barbershop.id}/stats`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        )
+
+        if (statsRes.ok) {
+          const data = await statsRes.json()
+          setRevenue(data)
+        }
+      } catch (error) {
+        console.error('Erro ao buscar receita:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchRevenue()
+  }, [])
+
+  const revenueData = [
+    { month: "Receita Atual", receita: revenue?.total_revenue || 0, servicos: revenue?.confirmed || 0 },
+  ]
+
+  if (loading) {
+    return (
+      <Card className="bg-card border-border">
+        <CardHeader>
+          <CardTitle className="font-heading text-foreground">Receita</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="h-[300px] bg-secondary/50 rounded animate-pulse" />
+        </CardContent>
+      </Card>
+    )
+  }
+
   return (
     <Card className="bg-card border-border">
       <CardHeader>
-        <CardTitle className="font-heading text-foreground">Receita Mensal</CardTitle>
+        <CardTitle className="font-heading text-foreground">Receita</CardTitle>
         <CardDescription className="text-muted-foreground">
-          Faturamento dos ultimos 7 meses
+          {revenue?.confirmed || 0} agendamentos confirmados
         </CardDescription>
       </CardHeader>
       <CardContent>
+        <div className="space-y-2">
+          <div className="text-3xl font-bold text-foreground">
+            R$ {(revenue?.total_revenue || 0).toFixed(2)}
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Receita total de agendamentos confirmados
+          </p>
+        </div>
         <ChartContainer
           config={{
             receita: {
@@ -49,7 +108,7 @@ export function RevenueChart() {
               color: "hsl(36, 80%, 50%)",
             },
           }}
-          className="h-[300px]"
+          className="h-[300px] mt-6"
         >
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={revenueData} margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>

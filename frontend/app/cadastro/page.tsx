@@ -70,7 +70,7 @@ export default function SignupPage() {
           <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary">
             <Scissors className="w-5 h-5 text-primary-foreground" />
           </div>
-          <span className="font-heading text-xl font-bold text-foreground">BarberPro</span>
+          <span className="font-heading text-xl font-bold text-foreground">BarberFlow</span>
         </div>
 
         <Card className="bg-card border-border">

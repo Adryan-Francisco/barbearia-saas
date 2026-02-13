@@ -3,21 +3,221 @@ import { prisma } from '../utils/prisma';
 import { AppError } from '../middleware/errorHandler';
 import { Appointment, Service } from '@prisma/client';
 
-export async function loginBarbershop(req: Request, res: Response, next: NextFunction) {
+// CREATE - Criar nova barbearia
+export async function createBarbershop(req: Request, res: Response, next: NextFunction) {
   try {
-    const { barbershop_id, password } = req.body;
+    const { name, phone, address, latitude, longitude } = req.body;
+    const userId = (req as any).userId; // Vem do middleware de autenticação
 
-    if (!barbershop_id || !password) {
-      throw new AppError('ID da barbearia e senha são obrigatórios', 400);
+    if (!userId) {
+      throw new AppError('Usuário não autenticado', 401);
     }
 
-    // Para demo, usamos uma senha fixa
-    const demoPassword = 'admin123';
-    
-    if (password !== demoPassword) {
-      throw new AppError('Credenciais inválidas', 401);
+    if (!name || !phone || !address) {
+      throw new AppError('Nome, telefone e endereço são obrigatórios', 400);
     }
 
+    // Verificar se o usuário é um dono de barbearia
+    const user = await prisma.user.findUnique({
+      where: { id: userId }
+    });
+
+    if (!user || user.role !== 'barbershop_owner') {
+      throw new AppError('Você não tem permissão para criar uma barbearia', 403);
+    }
+
+    // Verificar se o usuário já tem uma barbearia
+    const existingBarbershop = await prisma.barbershop.findFirst({
+      where: { ownerId: userId }
+    });
+
+    if (existingBarbershop) {
+      throw new AppError('Você já possui uma barbearia registrada', 400);
+    }
+
+    const barbershop = await prisma.barbershop.create({
+      data: {
+        name,
+        phone,
+        address,
+        latitude: latitude || null,
+        longitude: longitude || null,
+        ownerId: userId
+      },
+      include: {
+        services: true
+      }
+    });
+
+    res.status(201).json({
+      message: 'Barbearia criada com sucesso',
+      barbershop: {
+        id: barbershop.id,
+        name: barbershop.name,
+        phone: barbershop.phone,
+        address: barbershop.address,
+        latitude: barbershop.latitude,
+        longitude: barbershop.longitude,
+        services: barbershop.services,
+        createdAt: barbershop.createdAt
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+// READ - Obter barbearia do usuário logado
+export async function getMyBarbershop(req: Request, res: Response, next: NextFunction) {
+  try {
+    const userId = (req as any).userId;
+
+    if (!userId) {
+      throw new AppError('Usuário não autenticado', 401);
+    }
+
+    const barbershop = await prisma.barbershop.findFirst({
+      where: { ownerId: userId },
+      include: {
+        services: true,
+        appointments: {
+          include: {
+            client: true,
+            service: true
+          },
+          orderBy: { appointmentDate: 'desc' }
+        },
+        reviews: {
+          include: {
+            user: true
+          }
+        }
+      }
+    });
+
+    if (!barbershop) {
+      throw new AppError('Você não possui uma barbearia registrada', 404);
+    }
+
+    res.json({
+      barbershop: {
+        id: barbershop.id,
+        name: barbershop.name,
+        phone: barbershop.phone,
+        address: barbershop.address,
+        latitude: barbershop.latitude,
+        longitude: barbershop.longitude,
+        rating: barbershop.rating,
+        services: barbershop.services,
+        appointments: barbershop.appointments,
+        reviews: barbershop.reviews,
+        createdAt: barbershop.createdAt
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+// READ - Obter todas as barbearias (para clientes)
+export async function getAllBarbershops(req: Request, res: Response, next: NextFunction) {
+  try {
+    const barbershops = await prisma.barbershop.findMany({
+      include: {
+        services: true,
+        reviews: true,
+        _count: {
+          select: { appointments: true, reviews: true }
+        }
+      },
+      orderBy: { rating: 'desc' }
+    });
+
+    const result = barbershops.map(b => ({
+      id: b.id,
+      name: b.name,
+      phone: b.phone,
+      address: b.address,
+      latitude: b.latitude,
+      longitude: b.longitude,
+      rating: b.rating || 0,
+      servicesCount: b.services.length,
+      appointmentsCount: b._count.appointments,
+      reviewsCount: b._count.reviews,
+      services: b.services,
+      createdAt: b.createdAt
+    }));
+
+    res.json({
+      total: result.length,
+      barbershops: result
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+// READ - Obter uma barbearia específica
+export async function getBarbershopById(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { barbershop_id } = req.params;
+
+    if (!barbershop_id) {
+      throw new AppError('ID da barbearia é obrigatório', 400);
+    }
+
+    const barbershop = await prisma.barbershop.findUnique({
+      where: { id: barbershop_id },
+      include: {
+        services: true,
+        reviews: {
+          include: {
+            user: true
+          },
+          orderBy: { createdAt: 'desc' }
+        }
+      }
+    });
+
+    if (!barbershop) {
+      throw new AppError('Barbearia não encontrada', 404);
+    }
+
+    res.json({
+      barbershop: {
+        id: barbershop.id,
+        name: barbershop.name,
+        phone: barbershop.phone,
+        address: barbershop.address,
+        latitude: barbershop.latitude,
+        longitude: barbershop.longitude,
+        rating: barbershop.rating || 0,
+        services: barbershop.services,
+        reviews: barbershop.reviews,
+        createdAt: barbershop.createdAt
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+// UPDATE - Atualizar barbearia (apenas o proprietário)
+export async function updateBarbershop(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { barbershop_id } = req.params;
+    const { name, phone, address, latitude, longitude } = req.body;
+    const userId = (req as any).userId;
+
+    if (!userId) {
+      throw new AppError('Usuário não autenticado', 401);
+    }
+
+    if (!barbershop_id) {
+      throw new AppError('ID da barbearia é obrigatório', 400);
+    }
+
+    // Verificar se a barbearia existe e se o usuário é o proprietário
     const barbershop = await prisma.barbershop.findUnique({
       where: { id: barbershop_id }
     });
@@ -26,12 +226,79 @@ export async function loginBarbershop(req: Request, res: Response, next: NextFun
       throw new AppError('Barbearia não encontrada', 404);
     }
 
+    if (barbershop.ownerId !== userId) {
+      throw new AppError('Você não tem permissão para atualizar esta barbearia', 403);
+    }
+
+    // Atualizar apenas os campos fornecidos
+    const updateData: any = {};
+    if (name) updateData.name = name;
+    if (phone) updateData.phone = phone;
+    if (address) updateData.address = address;
+    if (latitude) updateData.latitude = latitude;
+    if (longitude) updateData.longitude = longitude;
+
+    const updated = await prisma.barbershop.update({
+      where: { id: barbershop_id },
+      data: updateData,
+      include: {
+        services: true
+      }
+    });
+
     res.json({
-      message: 'Login de barbearia realizado com sucesso',
+      message: 'Barbearia atualizada com sucesso',
       barbershop: {
-        id: barbershop.id,
-        name: barbershop.name,
-      },
+        id: updated.id,
+        name: updated.name,
+        phone: updated.phone,
+        address: updated.address,
+        latitude: updated.latitude,
+        longitude: updated.longitude,
+        rating: updated.rating,
+        services: updated.services,
+        createdAt: updated.createdAt
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+// DELETE - Deletar barbearia (apenas o proprietário)
+export async function deleteBarbershop(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { barbershop_id } = req.params;
+    const userId = (req as any).userId;
+
+    if (!userId) {
+      throw new AppError('Usuário não autenticado', 401);
+    }
+
+    if (!barbershop_id) {
+      throw new AppError('ID da barbearia é obrigatório', 400);
+    }
+
+    // Verificar se a barbearia existe e se o usuário é o proprietário
+    const barbershop = await prisma.barbershop.findUnique({
+      where: { id: barbershop_id }
+    });
+
+    if (!barbershop) {
+      throw new AppError('Barbearia não encontrada', 404);
+    }
+
+    if (barbershop.ownerId !== userId) {
+      throw new AppError('Você não tem permissão para deletar esta barbearia', 403);
+    }
+
+    // Deletar agendamentos, serviços e reviews (cascade está configurado no schema)
+    await prisma.barbershop.delete({
+      where: { id: barbershop_id }
+    });
+
+    res.json({
+      message: 'Barbearia deletada com sucesso'
     });
   } catch (error) {
     next(error);
