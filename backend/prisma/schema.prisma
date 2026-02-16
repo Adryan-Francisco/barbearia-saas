@@ -12,32 +12,33 @@ datasource db {
 
 model User {
   id        String   @id @default(uuid())
-  name      String
-  phone     String   @unique
+  name      String   @map("nome")
+  phone     String   @unique @map("telefone")
   email     String?  @unique
-  password  String
-  role      String   @default("client") // "client" | "barbershop_owner" | "admin"
+  password  String   @map("senha")
+  role      String   @default("client") @map("funcao") // "client" | "barbershop_owner" | "admin"
   
   barbershops   Barbershop[]
   appointments  Appointment[]
   reviews       Review[]
   favorites     Favorite[]
+  passwordResets PasswordReset[]
   
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now()) @map("criado_em")
+  updatedAt DateTime @updatedAt @map("atualizado_em")
 
-  @@map("users")
+  @@map("usuarios")
 }
 
 model Barbershop {
   id        String   @id @default(uuid())
-  name      String
-  phone     String
-  address   String
-  latitude  String?
-  longitude String?
-  rating    Float?   @default(0)
-  ownerId   String
+  name      String   @map("nome")
+  phone     String   @map("telefone")
+  address   String   @map("endereco")
+  latitude  String?  @map("latitude")
+  longitude String?  @map("longitude")
+  rating    Float?   @default(0) @map("avaliacao")
+  ownerId   String   @map("dono_id")
   
   owner         User           @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   services      Service[]
@@ -45,101 +46,127 @@ model Barbershop {
   reviews       Review[]
   favorites     Favorite[]
   
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now()) @map("criado_em")
+  updatedAt DateTime @updatedAt @map("atualizado_em")
 
-  @@map("barbershops")
+  @@map("barbearias")
   @@index([ownerId])
 }
 
 model Service {
   id            String   @id @default(uuid())
-  barbershopId  String
-  name          String
-  description   String?
-  price         Float
-  duration      Int
+  barbershopId  String   @map("barbershop_id")
+  name          String   @map("nome")
+  description   String?  @map("descricao")
+  price         Float    @map("preco")
+  duration      Int      @map("duracao")
   
   barbershop    Barbershop @relation(fields: [barbershopId], references: [id], onDelete: Cascade)
   appointments  Appointment[]
   
-  createdAt DateTime @default(now())
+  createdAt DateTime @default(now()) @map("criado_em")
 
-  @@map("services")
+  @@map("servicos")
 }
 
 model Appointment {
   id              String   @id @default(uuid())
-  barbershopId    String
-  clientId        String
-  serviceId       String
-  appointmentDate DateTime
-  appointmentTime String
-  status          String   @default("confirmed")
-  notes           String?
+  barbershopId    String   @map("barbershop_id")
+  clientId        String   @map("cliente_id")
+  serviceId       String   @map("servico_id")
+  appointmentDate DateTime @map("data_agendamento")
+  appointmentTime String   @map("hora_agendamento")
+  status          String   @default("confirmed") @map("status")
+  notes           String?  @map("notas")
   
   barbershop      Barbershop @relation(fields: [barbershopId], references: [id], onDelete: Cascade)
   client          User       @relation(fields: [clientId], references: [id], onDelete: Cascade)
   service         Service    @relation(fields: [serviceId], references: [id], onDelete: Cascade)
   cancellation    Cancellation?
   
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now()) @map("criado_em")
+  updatedAt DateTime @updatedAt @map("atualizado_em")
 
-  @@map("appointments")
+  @@map("agendamentos")
 }
 
 model Review {
   id           String   @id @default(uuid())
-  barbershopId String
-  userId       String
-  rating       Int
-  comment      String?
+  barbershopId String   @map("barbershop_id")
+  userId       String   @map("usuario_id")
+  rating       Int      @map("avaliacao")
+  comment      String?  @map("comentario")
   
   barbershop   Barbershop @relation(fields: [barbershopId], references: [id], onDelete: Cascade)
   user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   
-  createdAt DateTime @default(now())
+  createdAt DateTime @default(now()) @map("criado_em")
 
-  @@map("reviews")
+  @@map("avaliacoes")
 }
 
 model Favorite {
   id           String   @id @default(uuid())
-  userId       String
-  barbershopId String
+  userId       String   @map("usuario_id")
+  barbershopId String   @map("barbershop_id")
   
   user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   barbershop   Barbershop @relation(fields: [barbershopId], references: [id], onDelete: Cascade)
   
-  createdAt DateTime @default(now())
+  createdAt DateTime @default(now()) @map("criado_em")
 
   @@unique([userId, barbershopId])
-  @@map("favorites")
+  @@map("favoritos")
 }
 
 model Cancellation {
   id            String   @id @default(uuid())
-  appointmentId String   @unique
-  reason        String?
-  cancelledBy   String
+  appointmentId String   @unique @map("agendamento_id")
+  reason        String?  @map("motivo")
+  cancelledBy   String   @map("cancelado_por")
   
   appointment   Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
   
-  createdAt DateTime @default(now())
+  createdAt DateTime @default(now()) @map("criado_em")
 
-  @@map("cancellations")
+  @@map("cancelamentos")
 }
 
 model Availability {
   id           String   @id @default(uuid())
-  barbershopId String
-  date         String
-  startTime    String
-  endTime      String
-  isAvailable  Boolean  @default(true)
+  barbershopId String   @map("barbershop_id")
+  date         String   @map("data")
+  startTime    String   @map("hora_inicio")
+  endTime      String   @map("hora_fim")
+  isAvailable  Boolean  @default(true) @map("disponivel")
   
-  createdAt DateTime @default(now())
+  createdAt DateTime @default(now()) @map("criado_em")
 
-  @@map("availability")
+  @@map("disponibilidades")
+}
+
+model PasswordReset {
+  id        String   @id @default(uuid())
+  userId    String   @map("usuario_id")
+  token     String   @unique
+  expiresAt DateTime @map("expira_em")
+  
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  createdAt DateTime @default(now()) @map("criado_em")
+
+  @@map("recuperacoes_senha")
+}
+
+model SystemVersion {
+  id        String   @id @default(uuid())
+  major     Int      @default(0)
+  minor     Int      @default(1)
+  patch     Int      @default(0)
+  migration Int      @default(0) @map("migracao_numero")
+  
+  createdAt DateTime @default(now()) @map("criado_em")
+  updatedAt DateTime @updatedAt @map("atualizado_em")
+
+  @@map("versoes_sistema")
 }

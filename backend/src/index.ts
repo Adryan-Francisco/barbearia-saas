@@ -18,6 +18,7 @@ import paymentRoutes from './routes/paymentRoutes';
 import stripeRoutes from './routes/stripeRoutes';
 import favoritesRoutes from './routes/favoritesRoutes';
 import cancellationRoutes from './routes/cancellationRoutes';
+import versionRoutes from './routes/versionRoutes';
 import { errorHandler } from './middleware/errorHandler';
 
 dotenv.config();
@@ -66,10 +67,10 @@ app.use(express.urlencoded({ limit: '10mb', extended: true }));
 app.use(paginationMiddleware);
 app.use(cacheMiddleware(5 * 60 * 1000));
 
-// Database uses Prisma - no need for initializeDatabase
-
-// Inicializar WebSocket
-websocketService.initialize(httpServer);
+// Health check
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
 
 // Routes
 app.use('/api/auth', authRoutes);
@@ -82,6 +83,7 @@ app.use('/api/payments', paymentRoutes);
 app.use('/api/stripe', stripeRoutes);
 app.use('/api/favorites', favoritesRoutes);
 app.use('/api/cancellations', cancellationRoutes);
+app.use('/api/version', versionRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

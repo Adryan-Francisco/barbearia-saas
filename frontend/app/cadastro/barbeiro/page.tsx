@@ -11,6 +11,8 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent } from "@/components/ui/card"
 import { authAPI } from "@/lib/api"
 import { useToast } from "@/hooks/use-toast"
+import { validatePasswordStrength } from "@/lib/passwordValidator"
+import { PasswordStrengthIndicator } from "@/components/password-strength-indicator"
 
 export default function BarberSignupPage() {
   const [showPassword, setShowPassword] = useState(false)
@@ -19,11 +21,29 @@ export default function BarberSignupPage() {
   const [email, setEmail] = useState("")
   const [phone, setPhone] = useState("")
   const [password, setPassword] = useState("")
+  const [passwordStrength, setPasswordStrength] = useState(validatePasswordStrength(""))
   const router = useRouter()
   const { toast } = useToast()
 
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newPassword = e.target.value
+    setPassword(newPassword)
+    setPasswordStrength(validatePasswordStrength(newPassword))
+  }
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+
+    // Validar força da senha antes de enviar
+    if (!passwordStrength.isValid) {
+      toast({
+        title: "Senha fraca",
+        description: "A senha não atende aos requisitos de segurança",
+        variant: "destructive",
+      })
+      return
+    }
+
     setIsLoading(true)
     
     authAPI.barbershopRegister({
@@ -141,10 +161,10 @@ export default function BarberSignupPage() {
                   <Input
                     id="password"
                     type={showPassword ? "text" : "password"}
-                    placeholder="Minimo 8 caracteres"
+                    placeholder="Digite sua senha"
                     className="bg-secondary border-border text-foreground placeholder:text-muted-foreground pr-10"
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    onChange={handlePasswordChange}
                     required
                   />
                   <button
@@ -156,12 +176,13 @@ export default function BarberSignupPage() {
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
+                {password && <PasswordStrengthIndicator result={passwordStrength} />}
               </div>
 
               <Button
                 type="submit"
                 className="w-full bg-primary text-primary-foreground hover:bg-primary/90 h-11 text-sm font-semibold mt-2"
-                disabled={isLoading}
+                disabled={isLoading || !passwordStrength.isValid || !barbershopName || !phone}
               >
                 {isLoading ? "Criando conta..." : "Criar conta"}
               </Button>

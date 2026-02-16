@@ -1,239 +1,358 @@
-"use client"
+'use client';
 
-import React from "react"
-import { useState, useEffect } from "react"
-import { Card, CardContent } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { Label } from "@/components/ui/label"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Switch } from "@/components/ui/switch"
-import { User, Mail, Phone, Lock, Bell, Calendar, Scissors } from "lucide-react"
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { PasswordStrengthIndicator } from '@/components/password-strength-indicator';
+import { authAPI } from '@/lib/api';
+import { validatePasswordStrength } from '@/lib/passwordValidator';
+import { AlertCircle, CheckCircle, Eye, EyeOff } from 'lucide-react';
 
-interface UserData {
-  id: string
-  name: string
-  phone: string
-  role: string
-}
+export default function PerfilPage() {
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
 
-export default function ClientProfilePage() {
-  const [saving, setSaving] = useState(false)
-  const [saved, setSaved] = useState(false)
-  const [user, setUser] = useState<UserData | null>(null)
+  // Formulário de edição de perfil
+  const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [editingProfile, setEditingProfile] = useState(false);
+  const [loadingProfile, setLoadingProfile] = useState(true);
 
+  // Formulário de mudança de senha
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [changingPassword, setChangingPassword] = useState(false);
+  const [passwordValidation, setPasswordValidation] = useState(() => validatePasswordStrength(''));
+
+  // Carregar dados do usuário
   useEffect(() => {
-    const savedUser = localStorage.getItem('user')
-    if (savedUser) {
+    const loadProfile = async () => {
       try {
-        setUser(JSON.parse(savedUser))
+        const { data, error } = await authAPI.getProfile();
+
+        if (error) {
+          setErrorMessage(error.message);
+          setTimeout(() => router.push('/entrar/cliente'), 2000);
+          return;
+        }
+
+        if (data) {
+          setName((data as any).name || '');
+          setPhone((data as any).phone || '');
+        }
       } catch (error) {
-        console.error('Erro ao parsear usuário:', error)
+        setErrorMessage('Erro ao carregar perfil');
+      } finally {
+        setLoadingProfile(false);
       }
+    };
+
+    loadProfile();
+  }, [router]);
+
+  // Atualizar perfil
+  const handleUpdateProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setErrorMessage('');
+    setSuccessMessage('');
+
+    try {
+      const { data, error } = await authAPI.updateProfile(name, phone);
+
+      if (error) {
+        setErrorMessage(error.message);
+        return;
+      }
+
+      setSuccessMessage('Perfil atualizado com sucesso!');
+      setEditingProfile(false);
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (error) {
+      setErrorMessage('Erro ao atualizar perfil');
+    } finally {
+      setLoading(false);
     }
-  }, [])
+  };
 
-  const userName = user?.name || "Usuário"
-  const userPhone = user?.phone || ""
-  const userInitials = user?.name
-    ?.split(' ')
-    .map((n) => n[0])
-    .join('')
-    .toUpperCase() || "U"
+  // Mudar senha
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setChangingPassword(true);
+    setErrorMessage('');
+    setSuccessMessage('');
 
-  function handleSave(e: React.FormEvent) {
-    e.preventDefault()
-    setSaving(true)
-    setTimeout(() => {
-      setSaving(false)
-      setSaved(true)
-      setTimeout(() => setSaved(false), 3000)
-    }, 1000)
+    // Validações
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      setErrorMessage('Todos os campos são obrigatórios');
+      setChangingPassword(false);
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setErrorMessage('As senhas não correspondem');
+      setChangingPassword(false);
+      return;
+    }
+
+    if (!passwordValidation.isValid) {
+      setErrorMessage(`Senha fraca. ${passwordValidation.errors.join('; ')}`);
+      setChangingPassword(false);
+      return;
+    }
+
+    try {
+      const { data, error } = await authAPI.changePassword(currentPassword, newPassword);
+
+      if (error) {
+        setErrorMessage(error.message);
+        setChangingPassword(false);
+        return;
+      }
+
+      setSuccessMessage('Senha alterada com sucesso!');
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (error) {
+      setErrorMessage('Erro ao alterar senha');
+    } finally {
+      setChangingPassword(false);
+    }
+  };
+
+  const handleNewPasswordChange = (value: string) => {
+    setNewPassword(value);
+    setPasswordValidation(validatePasswordStrength(value));
+  };
+
+  if (loadingProfile) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p>Carregando perfil...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div>
-      <div className="mb-8">
-        <h1 className="font-heading text-2xl font-bold text-foreground">Meu Perfil</h1>
-        <p className="text-sm text-muted-foreground mt-1">Gerencie suas informacoes pessoais e preferencias</p>
-      </div>
+    <div className="container mx-auto py-8 px-4 max-w-2xl">
+      <h1 className="text-3xl font-bold mb-8">Meu Perfil</h1>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left: Profile card */}
-        <div className="lg:col-span-1">
-          <Card className="bg-card border-border">
-            <CardContent className="p-6 flex flex-col items-center text-center">
-              <Avatar className="w-24 h-24 mb-4">
-                <AvatarFallback className="bg-primary/10 text-primary text-2xl font-bold">
-                  {userInitials}
-                </AvatarFallback>
-              </Avatar>
-              <h2 className="font-heading text-lg font-bold text-card-foreground">{userName}</h2>
-              <p className="text-sm text-muted-foreground">{userPhone}</p>
-
-              <div className="w-full mt-6 pt-5 border-t border-border flex flex-col gap-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Calendar className="w-4 h-4 text-primary" />
-                    Cliente desde
-                  </div>
-                  <span className="text-sm font-medium text-card-foreground">Mar 2025</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Scissors className="w-4 h-4 text-primary" />
-                    Total de visitas
-                  </div>
-                  <span className="text-sm font-medium text-card-foreground">12</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <User className="w-4 h-4 text-primary" />
-                    Barbeiro favorito
-                  </div>
-                  <span className="text-sm font-medium text-card-foreground">Rafael Costa</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+      {/* Mensagens de erro e sucesso */}
+      {errorMessage && (
+        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
+          <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+          <p className="text-red-800">{errorMessage}</p>
         </div>
+      )}
 
-        {/* Right: Forms */}
-        <div className="lg:col-span-2 flex flex-col gap-6">
-          {/* Personal data */}
-          <Card className="bg-card border-border">
-            <CardContent className="p-6">
-              <h3 className="font-heading text-lg font-semibold text-card-foreground mb-5">
-                Dados Pessoais
-              </h3>
-              <form onSubmit={handleSave} className="flex flex-col gap-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="flex flex-col gap-2">
-                    <Label htmlFor="name" className="text-sm text-card-foreground flex items-center gap-1.5">
-                      <User className="w-3.5 h-3.5 text-muted-foreground" /> Nome completo
-                    </Label>
-                    <Input
-                      id="name"
-                      defaultValue={userName}
-                      className="bg-secondary border-border text-foreground"
-                    />
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    <Label htmlFor="email" className="text-sm text-card-foreground flex items-center gap-1.5">
-                      <Mail className="w-3.5 h-3.5 text-muted-foreground" /> E-mail
-                    </Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      defaultValue="joao.silva@email.com"
-                      className="bg-secondary border-border text-foreground"
-                    />
-                  </div>
-                </div>
-                <div className="flex flex-col gap-2">
-                  <Label htmlFor="phone" className="text-sm text-card-foreground flex items-center gap-1.5">
-                    <Phone className="w-3.5 h-3.5 text-muted-foreground" /> Telefone
-                  </Label>
-                  <Input
-                    id="phone"
-                    defaultValue={userPhone}
-                    className="bg-secondary border-border text-foreground max-w-sm"
-                  />
-                </div>
-                <div className="flex items-center gap-3 pt-2">
-                  <Button
-                    type="submit"
-                    className="bg-primary text-primary-foreground hover:bg-primary/90"
-                    disabled={saving}
-                  >
-                    {saving ? "Salvando..." : "Salvar Alteracoes"}
-                  </Button>
-                  {saved && (
-                    <span className="text-sm text-primary font-medium">Salvo com sucesso!</span>
-                  )}
-                </div>
-              </form>
-            </CardContent>
-          </Card>
+      {successMessage && (
+        <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-start gap-3">
+          <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+          <p className="text-green-800">{successMessage}</p>
+        </div>
+      )}
 
-          {/* Password */}
-          <Card className="bg-card border-border">
-            <CardContent className="p-6">
-              <h3 className="font-heading text-lg font-semibold text-card-foreground mb-5 flex items-center gap-2">
-                <Lock className="w-4 h-4 text-muted-foreground" />
-                Alterar Senha
-              </h3>
-              <form className="flex flex-col gap-4">
-                <div className="flex flex-col gap-2">
-                  <Label htmlFor="current" className="text-sm text-card-foreground">Senha atual</Label>
-                  <Input
-                    id="current"
-                    type="password"
-                    placeholder="Sua senha atual"
-                    className="bg-secondary border-border text-foreground placeholder:text-muted-foreground max-w-sm"
-                  />
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="flex flex-col gap-2">
-                    <Label htmlFor="newPass" className="text-sm text-card-foreground">Nova senha</Label>
-                    <Input
-                      id="newPass"
-                      type="password"
-                      placeholder="Minimo 8 caracteres"
-                      className="bg-secondary border-border text-foreground placeholder:text-muted-foreground"
-                    />
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    <Label htmlFor="confirmPass" className="text-sm text-card-foreground">Confirmar nova senha</Label>
-                    <Input
-                      id="confirmPass"
-                      type="password"
-                      placeholder="Repita a nova senha"
-                      className="bg-secondary border-border text-foreground placeholder:text-muted-foreground"
-                    />
-                  </div>
-                </div>
-                <Button type="button" variant="outline" className="w-fit border-border text-foreground hover:bg-secondary bg-transparent">
-                  Atualizar Senha
+      {/* Seção de edição de perfil */}
+      <Card className="mb-8">
+        <CardHeader>
+          <CardTitle>Informações Pessoais</CardTitle>
+          <CardDescription>
+            {editingProfile
+              ? 'Edite suas informações de perfil'
+              : 'Visualize suas informações de perfil'}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {!editingProfile ? (
+            <div className="space-y-4">
+              <div>
+                <Label className="text-sm text-gray-600">Nome</Label>
+                <p className="text-lg font-medium">{name}</p>
+              </div>
+              <div>
+                <Label className="text-sm text-gray-600">Telefone</Label>
+                <p className="text-lg font-medium">{phone}</p>
+              </div>
+              <Button
+                type="button"
+                onClick={() => setEditingProfile(true)}
+                className="w-full"
+              >
+                Editar Perfil
+              </Button>
+            </div>
+          ) : (
+            <form onSubmit={handleUpdateProfile} className="space-y-4">
+              <div>
+                <Label htmlFor="name">Nome</Label>
+                <Input
+                  id="name"
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Seu nome"
+                  required
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="phone">Telefone</Label>
+                <Input
+                  id="phone"
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="(11) 99999-9999"
+                  required
+                />
+              </div>
+
+              <div className="flex gap-3">
+                <Button
+                  type="submit"
+                  disabled={loading}
+                  className="flex-1"
+                >
+                  {loading ? 'Salvando...' : 'Salvar Alterações'}
                 </Button>
-              </form>
-            </CardContent>
-          </Card>
-
-          {/* Notifications */}
-          <Card className="bg-card border-border">
-            <CardContent className="p-6">
-              <h3 className="font-heading text-lg font-semibold text-card-foreground mb-5 flex items-center gap-2">
-                <Bell className="w-4 h-4 text-muted-foreground" />
-                Notificacoes
-              </h3>
-              <div className="flex flex-col gap-5">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-card-foreground">Lembretes de agendamento</p>
-                    <p className="text-xs text-muted-foreground">Receba um lembrete 1 hora antes do horario</p>
-                  </div>
-                  <Switch defaultChecked />
-                </div>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-card-foreground">Promocoes e novidades</p>
-                    <p className="text-xs text-muted-foreground">Fique por dentro de ofertas exclusivas</p>
-                  </div>
-                  <Switch defaultChecked />
-                </div>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-card-foreground">Notificacoes por WhatsApp</p>
-                    <p className="text-xs text-muted-foreground">Receba confirmacoes e lembretes via WhatsApp</p>
-                  </div>
-                  <Switch />
-                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setEditingProfile(false)}
+                  className="flex-1"
+                >
+                  Cancelar
+                </Button>
               </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+            </form>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Seção de informações do sistema */}
+      <Card className="mb-8 bg-gray-50">
+        <CardHeader>
+          <CardTitle>Informações do Sistema</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2">
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-600">Versão:</span>
+              <span className="text-sm font-medium">v0.1.0</span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Seção de mudança de senha */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Alterar Senha</CardTitle>
+          <CardDescription>Mude sua senha de acesso</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleChangePassword} className="space-y-4">
+            <div>
+              <Label htmlFor="current-password">Senha Atual</Label>
+              <div className="relative">
+                <Input
+                  id="current-password"
+                  type={showCurrentPassword ? 'text' : 'password'}
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  placeholder="Digite sua senha atual"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500"
+                >
+                  {showCurrentPassword ? (
+                    <EyeOff className="w-4 h-4" />
+                  ) : (
+                    <Eye className="w-4 h-4" />
+                  )}
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <Label htmlFor="new-password">Nova Senha</Label>
+              <div className="relative">
+                <Input
+                  id="new-password"
+                  type={showNewPassword ? 'text' : 'password'}
+                  value={newPassword}
+                  onChange={(e) => handleNewPasswordChange(e.target.value)}
+                  placeholder="Digite sua nova senha"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowNewPassword(!showNewPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500"
+                >
+                  {showNewPassword ? (
+                    <EyeOff className="w-4 h-4" />
+                  ) : (
+                    <Eye className="w-4 h-4" />
+                  )}
+                </button>
+              </div>
+
+              {newPassword && <PasswordStrengthIndicator result={passwordValidation} />}
+            </div>
+
+            <div>
+              <Label htmlFor="confirm-password">Confirmar Nova Senha</Label>
+              <div className="relative">
+                <Input
+                  id="confirm-password"
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Confirme sua nova senha"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500"
+                >
+                  {showConfirmPassword ? (
+                    <EyeOff className="w-4 h-4" />
+                  ) : (
+                    <Eye className="w-4 h-4" />
+                  )}
+                </button>
+              </div>
+            </div>
+
+            <Button
+              type="submit"
+              disabled={changingPassword || !passwordValidation.isValid}
+              className="w-full"
+            >
+              {changingPassword ? 'Alterando Senha...' : 'Alterar Senha'}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
     </div>
-  )
+  );
 }

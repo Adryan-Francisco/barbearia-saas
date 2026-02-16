@@ -126,8 +126,13 @@ export async function getAllBarbershops(req: Request, res: Response, next: NextF
       include: {
         services: true,
         reviews: true,
-        _count: {
-          select: { appointments: true, reviews: true }
+        appointments: true,
+        owner: {
+          select: {
+            id: true,
+            name: true,
+            role: true
+          }
         }
       },
       orderBy: { rating: 'desc' }
@@ -142,9 +147,16 @@ export async function getAllBarbershops(req: Request, res: Response, next: NextF
       longitude: b.longitude,
       rating: b.rating || 0,
       servicesCount: b.services.length,
-      appointmentsCount: b._count.appointments,
-      reviewsCount: b._count.reviews,
+      appointmentsCount: b.appointments.length,
+      reviewsCount: b.reviews.length,
       services: b.services,
+      barbers: [
+        {
+          id: b.owner.id,
+          name: b.owner.name,
+          role: 'Barbeiro'
+        }
+      ],
       createdAt: b.createdAt
     }));
 

@@ -12,6 +12,17 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent } from "@/components/ui/card"
 import { authAPI } from "@/lib/api"
 import { useToast } from "@/hooks/use-toast"
+import { validatePasswordStrength } from "@/lib/passwordValidator"
+import { PasswordStrengthIndicator } from "@/components/password-strength-indicator"
+
+interface RegisterResponse {
+  token: string
+  user: {
+    id: string
+    name: string
+    phone: string
+  }
+}
 
 export default function SignupPage() {
   const [showPassword, setShowPassword] = useState(false)
@@ -19,11 +30,29 @@ export default function SignupPage() {
   const [name, setName] = useState("")
   const [phone, setPhone] = useState("")
   const [password, setPassword] = useState("")
+  const [passwordStrength, setPasswordStrength] = useState(validatePasswordStrength(""))
   const router = useRouter()
   const { toast } = useToast()
 
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newPassword = e.target.value
+    setPassword(newPassword)
+    setPasswordStrength(validatePasswordStrength(newPassword))
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+
+    // Validar força da senha antes de enviar
+    if (!passwordStrength.isValid) {
+      toast({
+        title: "Senha fraca",
+        description: "A senha não atende aos requisitos de segurança",
+        variant: "destructive",
+      })
+      return
+    }
+
     setIsLoading(true)
     
     const result = await authAPI.register(name, phone, password)
@@ -38,9 +67,10 @@ export default function SignupPage() {
       return
     }
 
-    if (result.data?.token) {
-      localStorage.setItem('token', result.data.token)
-      localStorage.setItem('user', JSON.stringify(result.data.user))
+    if (result.data) {
+      const data = result.data as RegisterResponse
+      localStorage.setItem('token', data.token)
+      localStorage.setItem('user', JSON.stringify(data.user))
       
       toast({
         title: "Bem-vindo!",
@@ -116,10 +146,10 @@ export default function SignupPage() {
                   <Input
                     id="password"
                     type={showPassword ? "text" : "password"}
-                    placeholder="Minimo 8 caracteres"
+                    placeholder="Digite sua senha"
                     className="bg-secondary border-border text-foreground placeholder:text-muted-foreground pr-10"
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    onChange={handlePasswordChange}
                     required
                   />
                   <button
@@ -131,12 +161,13 @@ export default function SignupPage() {
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
+                {password && <PasswordStrengthIndicator result={passwordStrength} />}
               </div>
 
               <Button
                 type="submit"
                 className="w-full bg-primary text-primary-foreground hover:bg-primary/90 h-11 text-sm font-semibold mt-2"
-                disabled={isLoading}
+                disabled={isLoading || !passwordStrength.isValid || !name || !phone}
               >
                 {isLoading ? "Criando conta..." : "Criar conta"}
               </Button>

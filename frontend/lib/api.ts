@@ -15,6 +15,26 @@ interface ApiResponse<T> {
   error?: ApiError;
 }
 
+// Auth Response Types
+interface AuthResponse {
+  token: string;
+  user: {
+    id: string;
+    name: string;
+    phone: string;
+    email?: string;
+    role: string;
+  };
+}
+
+interface ProfileResponse {
+  id: string;
+  name: string;
+  phone: string;
+  email?: string;
+  role: string;
+}
+
 /**
  * Faz uma requisição à API
  */
@@ -76,27 +96,51 @@ async function apiCall<T>(
 // ==================== AUTH ====================
 export const authAPI = {
   login: (phone: string, password: string) =>
-    apiCall('/auth/login', {
+    apiCall<AuthResponse>('/auth/login', {
       method: 'POST',
       body: JSON.stringify({ phone, password }),
     }),
 
   register: (name: string, phone: string, password: string) =>
-    apiCall('/auth/register', {
+    apiCall<AuthResponse>('/auth/register', {
       method: 'POST',
       body: JSON.stringify({ name, phone, password }),
     }),
 
-  getProfile: () => apiCall('/auth/profile'),
+  getProfile: () => apiCall<ProfileResponse>('/auth/profile'),
+
+  updateProfile: (name: string, phone: string) =>
+    apiCall<ProfileResponse>('/auth/profile', {
+      method: 'PUT',
+      body: JSON.stringify({ name, phone }),
+    }),
+
+  changePassword: (currentPassword: string, newPassword: string) =>
+    apiCall('/auth/change-password', {
+      method: 'POST',
+      body: JSON.stringify({ currentPassword, newPassword }),
+    }),
+
+  requestPasswordReset: (phone: string) =>
+    apiCall('/auth/request-password-reset', {
+      method: 'POST',
+      body: JSON.stringify({ phone }),
+    }),
+
+  resetPassword: (token: string, newPassword: string) =>
+    apiCall('/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ token, newPassword }),
+    }),
 
   barbershopLogin: (email: string, password: string) =>
-    apiCall('/auth/barbershop-login', {
+    apiCall<AuthResponse>('/auth/barbershop-login', {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     }),
 
   barbershopRegister: (data: { name: string; email: string; phone: string; password: string }) =>
-    apiCall('/auth/barbershop-register', {
+    apiCall<AuthResponse>('/auth/barbershop-register', {
       method: 'POST',
       body: JSON.stringify(data),
     }),
@@ -212,6 +256,16 @@ export const stripeAPI = {
     apiCall('/stripe/create-payment-intent', {
       method: 'POST',
       body: JSON.stringify(data),
+    }),
+};
+
+// ==================== VERSION ====================
+export const versionAPI = {
+  getVersion: () => apiCall('/version'),
+  
+  incrementVersion: () =>
+    apiCall('/version/increment', {
+      method: 'POST',
     }),
 };
 

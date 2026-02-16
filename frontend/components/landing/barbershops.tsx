@@ -1,81 +1,47 @@
+'use client'
+
 import Image from "next/image"
 import Link from "next/link"
-import { Star, MapPin, Clock, ChevronRight } from "lucide-react"
+import { Star, MapPin, Clock, ChevronRight, Loader2 } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { useApi } from "@/lib/useApi"
 
 const placeholderImage = "/placeholder.svg"
 
-const barbershops = [
-  {
-    id: "corte-fino",
-    name: "Corte Fino Barbearia",
-    image: placeholderImage,
-    rating: 4.9,
-    reviews: 142,
-    address: "Rua Augusta, 1200 - Consolacao, SP",
-    hours: "Seg-Sab, 9h-20h",
-    specialties: ["Cortes Classicos", "Barba"],
-    priceRange: "R$ 45 - R$ 120",
-  },
-  {
-    id: "vintage-barber",
-    name: "Vintage Barber Shop",
-    image: placeholderImage,
-    rating: 4.8,
-    reviews: 98,
-    address: "Rua Oscar Freire, 300 - Jardins, SP",
-    hours: "Seg-Sab, 10h-21h",
-    specialties: ["Retro", "Navalha"],
-    priceRange: "R$ 50 - R$ 130",
-  },
-  {
-    id: "studio-hair",
-    name: "Studio Hair Masculino",
-    image: placeholderImage,
-    rating: 4.7,
-    reviews: 76,
-    address: "Av. Paulista, 900 - Bela Vista, SP",
-    hours: "Seg-Sab, 8h-19h",
-    specialties: ["Moderno", "Design"],
-    priceRange: "R$ 40 - R$ 100",
-  },
-  {
-    id: "urban-cuts",
-    name: "Urban Cuts",
-    image: placeholderImage,
-    rating: 4.9,
-    reviews: 210,
-    address: "Rua da Consolacao, 2500 - Consolacao, SP",
-    hours: "Seg-Sab, 10h-22h",
-    specialties: ["Fade", "Freestyle"],
-    priceRange: "R$ 55 - R$ 140",
-  },
-  {
-    id: "premium-barber",
-    name: "Premium Barber Lounge",
-    image: placeholderImage,
-    rating: 5.0,
-    reviews: 64,
-    address: "Rua Haddock Lobo, 800 - Cerqueira Cesar, SP",
-    hours: "Seg-Sab, 9h-20h",
-    specialties: ["VIP", "Tratamentos"],
-    priceRange: "R$ 80 - R$ 200",
-  },
-  {
-    id: "barbearia-do-ze",
-    name: "Barbearia do Ze",
-    image: placeholderImage,
-    rating: 4.8,
-    reviews: 185,
-    address: "Rua Teodoro Sampaio, 400 - Pinheiros, SP",
-    hours: "Seg-Sab, 8h-18h",
-    specialties: ["Tradicional", "Familiar"],
-    priceRange: "R$ 35 - R$ 85",
-  },
-]
+interface Barbershop {
+  id: string
+  name: string
+  address: string
+  rating?: number
+  phone?: string
+  createdAt?: string
+  updatedAt?: string
+}
+
+interface BarbershopsResponse {
+  total: number
+  barbershops: Barbershop[]
+}
 
 export function LandingBarbershops() {
+  const { data: response, loading, error } = useApi<BarbershopsResponse>('/barbershops')
+  
+  const barbershops = response?.barbershops || []
+
+  // Transformar dados da API para o formato do componente
+  const transformedShops = barbershops.map(shop => ({
+    id: shop.id,
+    name: shop.name,
+    image: placeholderImage,
+    rating: shop.rating || 4.5,
+    reviews: 0,
+    address: shop.address || "Endereço não informado",
+    hours: "Seg-Sab, 9h-20h",
+    specialties: ["Corte", "Barba"],
+    priceRange: "A partir de R$ 50",
+  }))
+
   return (
     <section id="barbearias" className="py-20 lg:py-28">
       <div className="mx-auto max-w-7xl px-6">
@@ -92,10 +58,33 @@ export function LandingBarbershops() {
           </p>
         </div>
 
+        {/* Loading State */}
+        {loading && (
+          <div className="flex justify-center items-center py-12">
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          </div>
+        )}
+
+        {/* Error State */}
+        {error && (
+          <div className="rounded-lg bg-destructive/10 border border-destructive/20 p-4 text-center">
+            <p className="text-destructive font-medium">Erro ao carregar barbearias</p>
+            <p className="text-sm text-destructive/80 mt-1">{error}</p>
+          </div>
+        )}
+
+        {/* Empty State */}
+        {!loading && !error && transformedShops.length === 0 && (
+          <div className="rounded-lg bg-muted/50 border border-border p-8 text-center">
+            <p className="text-muted-foreground font-medium">Nenhuma barbearia cadastrada</p>
+          </div>
+        )}
+
         {/* Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {barbershops.map((shop) => (
-            <Link key={shop.id} href={`/agendar/${shop.id}`}>
+        {!loading && !error && transformedShops.length > 0 && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {transformedShops.map((shop) => (
+              <Link key={shop.id} href={`/agendar/${shop.id}`}>
               <Card className="bg-card border-border hover:border-primary/40 transition-all group overflow-hidden h-full">
                 {/* Image */}
                 <div className="relative aspect-[16/10] overflow-hidden">
@@ -150,7 +139,8 @@ export function LandingBarbershops() {
               </Card>
             </Link>
           ))}
-        </div>
+          </div>
+        )}
       </div>
     </section>
   )

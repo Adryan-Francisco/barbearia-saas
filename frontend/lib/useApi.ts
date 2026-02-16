@@ -66,19 +66,3 @@ export {
   healthAPI,
 };
 
-/**
- * Exemplo de uso em componente:
- * 
- * import { useApi, authAPI } from '@/lib/useApi';
- * 
- * export function MyComponent() {
- *   const { data: profile, loading } = useApi('/auth/profile');
- *   
- *   const handleLogin = async () => {
- *     const result = await authAPI.login('123456789', 'password');
- *     if (!result.error) {
- *       localStorage.setItem('token', result.data?.token);
- *     }
- *   };
- * }
- */

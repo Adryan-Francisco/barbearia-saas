@@ -105,7 +105,7 @@ export default function ClientLoginPage() {
               <div className="flex flex-col gap-2">
                 <div className="flex items-center justify-between">
                   <Label htmlFor="password" className="text-sm text-card-foreground">Senha</Label>
-                  <Link href="#" className="text-xs text-primary hover:underline">
+                  <Link href="/recuperar-senha" className="text-xs text-primary hover:underline">
                     Esqueceu a senha?
                   </Link>
                 </div>

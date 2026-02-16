@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import {
   LayoutDashboard,
   Calendar,
@@ -33,6 +33,7 @@ const bottomItems = [
 
 export function AppSidebar() {
   const pathname = usePathname()
+  const router = useRouter()
   const [collapsed, setCollapsed] = useState(false)
   const [barbershopName, setBarbershopName] = useState("BarberFlow")
 
@@ -58,6 +59,12 @@ export function AppSidebar() {
     } catch (error) {
       console.error("Erro ao buscar barbearia:", error)
     }
+  }
+
+  function handleLogout() {
+    localStorage.removeItem("token")
+    localStorage.removeItem("user")
+    router.push("/entrar/barbeiro")
   }
 
   return (
@@ -144,7 +151,11 @@ export function AppSidebar() {
             </div>
           )}
           {!collapsed && (
-            <button className="text-muted-foreground hover:text-sidebar-foreground transition-colors" aria-label="Sair">
+            <button 
+              onClick={handleLogout}
+              className="text-muted-foreground hover:text-sidebar-foreground transition-colors" 
+              aria-label="Sair"
+            >
               <LogOut className="w-4 h-4" />
             </button>
           )}
