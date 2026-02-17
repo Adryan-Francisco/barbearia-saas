@@ -18,8 +18,8 @@ export default function ClientPage() {
   async function fetchVersion() {
     try {
       const result = await versionAPI.getVersion()
-      if (result.data?.version) {
-        setVersion(result.data.version)
+      if (result?.data && typeof result.data === 'object' && 'version' in result.data) {
+        setVersion((result.data as any).version)
       }
     } catch (error) {
       console.error("Erro ao buscar versão:", error)
