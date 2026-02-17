@@ -7,7 +7,7 @@ WORKDIR /app
 COPY backend/package*.json ./
 
 # Install dependencies
-RUN npm ci
+RUN npm install
 
 # Copy source code
 COPY backend . 
@@ -27,7 +27,7 @@ RUN apk add --no-cache dumb-init
 COPY backend/package*.json ./
 
 # Install production dependencies only
-RUN npm ci --only=production
+RUN npm install --only=production
 
 # Copy built app from builder
 COPY --from=builder /app/dist ./dist
