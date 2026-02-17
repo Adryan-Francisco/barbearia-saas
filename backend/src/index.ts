@@ -1,3 +1,9 @@
+// Log MUITO cedo - antes de qualquer importação ou operação
+console.error('[PRE-STARTUP] Process started at', new Date().toISOString());
+console.error('[PRE-STARTUP] Node version:', process.version);
+console.error('[PRE-STARTUP] Working directory:', process.cwd());
+console.error('[PRE-STARTUP] NODE_ENV:', process.env.NODE_ENV);
+
 import dotenv from 'dotenv';
 dotenv.config();
 
