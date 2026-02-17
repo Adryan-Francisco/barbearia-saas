@@ -1,22 +1,32 @@
+import dotenv from 'dotenv';
+dotenv.config();
+
+// Diagnóstico inicial
+(() => {
+  console.log('\n=== BARBERFLOW BACKEND STARTUP ===');
+  console.log('TIME:', new Date().toISOString());
+  console.log('NODE_ENV:', process.env.NODE_ENV);
+  console.log('PORT:', process.env.PORT || '3001');
+  console.log('DATABASE_URL:', process.env.DATABASE_URL ? '✅ SET' : '❌ NOT SET');
+  console.log('JWT_SECRET:', process.env.JWT_SECRET ? '✅ SET' : '❌ NOT SET');
+  console.log('===================================\n');
+})();
+
+console.log('[1] Loading express modules...');
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
 import rateLimit from 'express-rate-limit';
-import dotenv from 'dotenv';
-
-console.log('✅ Starting BarberFlow Backend...');console.log('✅ Module imports starting...');
-
-dotenv.config();
-
-console.log('✅ Dotenv loaded');
-console.log('📋 Environment:', process.env.NODE_ENV);
-console.log('🔌 Database URL:', process.env.DATABASE_URL ? 'SET' : 'NOT SET');
-console.log('🔐 JWT Secret:', process.env.JWT_SECRET ? 'SET' : 'NOT SET');
-
 import { createServer } from 'http';
+console.log('[2] ✅ Express modules loaded');
+
+console.log('[3] Loading middleware and utils...');
 import { cacheMiddleware } from './utils/cache';
 import { paginationMiddleware } from './utils/pagination';
+console.log('[4] ✅ Middleware loaded');
+
+console.log('[5] Loading route modules...');
 import authRoutes from './routes/authRoutes';
 import schedulingRoutes from './routes/schedulingRoutes';
 import barbershopRoutes from './routes/barbershopRoutes';
@@ -28,9 +38,11 @@ import stripeRoutes from './routes/stripeRoutes';
 import favoritesRoutes from './routes/favoritesRoutes';
 import cancellationRoutes from './routes/cancellationRoutes';
 import versionRoutes from './routes/versionRoutes';
-import { errorHandler } from './middleware/errorHandler';
+console.log('[6] ✅ Routes loaded');
 
-console.log('✅ All imports completed');
+console.log('[7] Loading error handler...');
+import { errorHandler } from './middleware/errorHandler';
+console.log('[8] ✅ All imports completed successfully');
 
 const app = express();
 const httpServer = createServer(app);
