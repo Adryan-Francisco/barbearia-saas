@@ -23,6 +23,11 @@ import { errorHandler } from './middleware/errorHandler';
 
 dotenv.config();
 
+console.log('✅ Starting BarberFlow Backend...');
+console.log('📋 Environment:', process.env.NODE_ENV);
+console.log('🔌 Database URL:', process.env.DATABASE_URL ? 'SET' : 'NOT SET');
+console.log('🔐 JWT Secret:', process.env.JWT_SECRET ? 'SET' : 'NOT SET');
+
 const app = express();
 const httpServer = createServer(app);
 const PORT = parseInt(process.env.PORT || '3001', 10);
@@ -106,9 +111,16 @@ process.on('unhandledRejection', (reason, promise) => {
 
 // Start server with error handling
 try {
+  console.log('🚀 Attempting to start server on port:', PORT);
+  
   httpServer.listen(PORT, '0.0.0.0', () => {
     console.log(`✅ Server running on port ${PORT}`);
     console.log(`✅ WebSocket server listening on ws://0.0.0.0:${PORT}`);
+  });
+
+  httpServer.on('error', (error: any) => {
+    console.error('❌ HTTP Server Error:', error);
+    process.exit(1);
   });
 
   // Graceful shutdown
@@ -121,5 +133,6 @@ try {
   });
 } catch (error) {
   console.error('❌ Server startup error:', error);
+  console.error('❌ Stack:', (error as any)?.stack);
   process.exit(1);
 }
