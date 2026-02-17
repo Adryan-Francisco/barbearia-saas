@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,7 +12,7 @@ import { validatePasswordStrength } from '@/lib/passwordValidator';
 import { AlertCircle, CheckCircle, Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 
-export default function RecuperarSenhaPage() {
+function RecuperarSenhaContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get('token');
@@ -312,5 +312,13 @@ export default function RecuperarSenhaPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export default function RecuperarSenhaPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-background flex items-center justify-center">Carregando...</div>}>
+      <RecuperarSenhaContent />
+    </Suspense>
   );
 }

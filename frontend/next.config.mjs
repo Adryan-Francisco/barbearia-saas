@@ -24,10 +24,6 @@ const nextConfig = {
       ],
     }
   },
-  // Configurações de produção
-  swcMinify: true,
-  compress: true,
-  productionBrowserSourceMaps: false,
 }
 
 export default nextConfig
