@@ -93,7 +93,22 @@ app.get('/api/health', (req, res) => {
 // Error Handler
 app.use(errorHandler);
 
-httpServer.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-  console.log(`WebSocket server listening on ws://localhost:${PORT}`);
-});
+// Start server with error handling
+try {
+  httpServer.listen(PORT, '0.0.0.0', () => {
+    console.log(`✅ Server running on port ${PORT}`);
+    console.log(`✅ WebSocket server listening on ws://0.0.0.0:${PORT}`);
+  });
+
+  // Graceful shutdown
+  process.on('SIGTERM', () => {
+    console.log('SIGTERM signal received: closing HTTP server');
+    httpServer.close(() => {
+      console.log('HTTP server closed');
+      process.exit(0);
+    });
+  });
+} catch (error) {
+  console.error('❌ Server startup error:', error);
+  process.exit(1);
+}
