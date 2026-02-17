@@ -4,7 +4,8 @@ const JWT_SECRET = process.env.JWT_SECRET || 'secret-key';
 
 export interface TokenPayload {
   id: string;
-  email?: string;
+  name: string;
+  phone: string;
   role: string;
 }
 

@@ -138,7 +138,7 @@ export async function getAllBarbershops(req: Request, res: Response, next: NextF
       orderBy: { rating: 'desc' }
     });
 
-    const result = barbershops.map(b => ({
+    const result = barbershops.map((b: any) => ({
       id: b.id,
       name: b.name,
       phone: b.phone,

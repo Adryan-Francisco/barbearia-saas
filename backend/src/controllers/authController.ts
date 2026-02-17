@@ -52,7 +52,7 @@ export async function register(req: Request, res: Response, next: NextFunction) 
 
     console.log("✅ Usuário criado com sucesso:", user.id);
 
-    const token = generateToken({ id: user.id, role: user.role });
+    const token = generateToken({ id: user.id, name: user.name, phone: user.phone, role: user.role });
 
     res.status(201).json({
       message: 'Usuário registrado com sucesso',
@@ -107,7 +107,7 @@ export async function barbershopRegister(req: Request, res: Response, next: Next
       }
     });
 
-    const token = generateToken({ id: user.id, role: user.role });
+    const token = generateToken({ id: user.id, name: user.name, phone: user.phone, role: user.role });
 
     res.status(201).json({
       message: 'Barbeiro registrado com sucesso',
@@ -148,6 +148,8 @@ export async function login(req: Request, res: Response, next: NextFunction) {
 
     const token = generateToken({
       id: user.id,
+      name: user.name,
+      phone: user.phone,
       role: user.role
     });
 

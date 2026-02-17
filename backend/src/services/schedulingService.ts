@@ -26,7 +26,7 @@ export async function getAvailableSlots(barbershopId: string, date: string): Pro
     },
   });
 
-  const bookedTimes = new Set(appointments.map((appointment) => appointment.appointmentTime));
+  const bookedTimes = new Set(appointments.map((appointment: any) => appointment.appointmentTime));
 
   // Horários padrão da barbearia (9:00 - 18:30), em intervalos de 30 min
   const startMinutes = 9 * 60;
