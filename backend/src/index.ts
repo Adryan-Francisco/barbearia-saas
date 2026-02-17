@@ -1,59 +1,81 @@
 import dotenv from 'dotenv';
 dotenv.config();
 
-// Diagnóstico inicial
-(() => {
-  console.log('\n=== BARBERFLOW BACKEND STARTUP ===');
-  console.log('TIME:', new Date().toISOString());
-  console.log('NODE_ENV:', process.env.NODE_ENV);
-  console.log('PORT:', process.env.PORT || '3001');
-  console.log('DATABASE_URL:', process.env.DATABASE_URL ? '✅ SET' : '❌ NOT SET');
-  console.log('JWT_SECRET:', process.env.JWT_SECRET ? '✅ SET' : '❌ NOT SET');
-  console.log('===================================\n');
-})();
+console.log('[STARTUP] Environment loaded');
+console.log('[STARTUP] NODE_ENV:', process.env.NODE_ENV || 'NOT SET');
+console.log('[STARTUP] DATABASE_URL:', process.env.DATABASE_URL ? 'SET' : 'NOT SET');
 
-console.log('[1] Loading express modules...');
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
 import rateLimit from 'express-rate-limit';
 import { createServer } from 'http';
-console.log('[2] ✅ Express modules loaded');
 
-console.log('[3] Loading middleware and utils...');
-import { cacheMiddleware } from './utils/cache';
-import { paginationMiddleware } from './utils/pagination';
-console.log('[4] ✅ Middleware loaded');
+console.log('[STARTUP] Express imports loaded');
 
-console.log('[5] Loading route modules...');
-import authRoutes from './routes/authRoutes';
-import schedulingRoutes from './routes/schedulingRoutes';
-import barbershopRoutes from './routes/barbershopRoutes';
-import serviceRoutes from './routes/serviceRoutes';
-import reviewRoutes from './routes/reviewRoutes';
-import analyticsRoutes from './routes/analyticsRoutes';
-import paymentRoutes from './routes/paymentRoutes';
-import stripeRoutes from './routes/stripeRoutes';
-import favoritesRoutes from './routes/favoritesRoutes';
-import cancellationRoutes from './routes/cancellationRoutes';
-import versionRoutes from './routes/versionRoutes';
-console.log('[6] ✅ Routes loaded');
+// Lazy load middleware
+let cacheMiddleware: any;
+let paginationMiddleware: any;
+let errorHandler: any;
 
-console.log('[7] Loading error handler...');
-import { errorHandler } from './middleware/errorHandler';
-console.log('[8] ✅ All imports completed successfully');
+const loadMiddleware = async () => {
+  console.log('[STARTUP] Loading middleware...');
+  const cache = await import('./utils/cache');
+  const pagination = await import('./utils/pagination');
+  const errors = await import('./middleware/errorHandler');
+  
+  cacheMiddleware = cache.cacheMiddleware;
+  paginationMiddleware = pagination.paginationMiddleware;
+  errorHandler = errors.errorHandler;
+  
+  console.log('[STARTUP] Middleware loaded successfully');
+};
+
+// Lazy load routes
+const loadRoutes = async () => {
+  console.log('[STARTUP] Loading routes...');
+  const auth = await import('./routes/authRoutes');
+  const scheduling = await import('./routes/schedulingRoutes');
+  const barbershop = await import('./routes/barbershopRoutes');
+  const service = await import('./routes/serviceRoutes');
+  const review = await import('./routes/reviewRoutes');
+  const analytics = await import('./routes/analyticsRoutes');
+  const payment = await import('./routes/paymentRoutes');
+  const stripe = await import('./routes/stripeRoutes');
+  const favorites = await import('./routes/favoritesRoutes');
+  const cancellation = await import('./routes/cancellationRoutes');
+  const version = await import('./routes/versionRoutes');
+  
+  console.log('[STARTUP] Routes loaded successfully');
+  
+  return {
+    authRoutes: auth.default || auth,
+    schedulingRoutes: scheduling.default || scheduling,
+    barbershopRoutes: barbershop.default || barbershop,
+    serviceRoutes: service.default || service,
+    reviewRoutes: review.default || review,
+    analyticsRoutes: analytics.default || analytics,
+    paymentRoutes: payment.default || payment,
+    stripeRoutes: stripe.default || stripe,
+    favoritesRoutes: favorites.default || favorites,
+    cancellationRoutes: cancellation.default || cancellation,
+    versionRoutes: version.default || version,
+  };
+};
 
 const app = express();
 const httpServer = createServer(app);
 const PORT = parseInt(process.env.PORT || '3001', 10);
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
 
-// Security & Performance Middleware
-app.use(helmet()); // Segurança de headers
-app.use(compression()); // Gzip compression
+console.log('[STARTUP] Express app initialized');
 
-// CORS configurado para produção
+// Basic security middleware (no dependencies)
+app.use(helmet());
+app.use(compression());
+
+// CORS
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
     ? [FRONTEND_URL] 
@@ -63,21 +85,20 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
-// Rate Limiting - Geral
+// Rate Limiting
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutos
-  max: process.env.NODE_ENV === 'production' ? 100 : 10000, // Muito mais permissivo em dev
+  windowMs: 15 * 60 * 1000,
+  max: process.env.NODE_ENV === 'production' ? 100 : 10000,
   message: 'Muitas requisições de seu IP, tente novamente mais tarde',
   standardHeaders: true,
   legacyHeaders: false,
 });
 app.use('/api/', limiter);
 
-// Rate Limiting - Autenticação (mais restritivo)
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: process.env.NODE_ENV === 'production' ? 5 : 100, // Muito mais permissivo em dev
-  skipSuccessfulRequests: true, // Não conta sucessos
+  max: process.env.NODE_ENV === 'production' ? 5 : 100,
+  skipSuccessfulRequests: true,
   message: 'Muitas tentativas de autenticação. Tente novamente em 15 minutos',
 });
 app.use('/api/auth/login', authLimiter);
@@ -85,70 +106,111 @@ app.use('/api/auth/register', authLimiter);
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
-app.use(paginationMiddleware);
-app.use(cacheMiddleware(5 * 60 * 1000));
 
-// Health check
+console.log('[STARTUP] Basic middleware configured');
+
+// Health check - MINIMAL (no database)
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  res.json({ 
+    status: 'ok', 
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV
+  });
 });
 
-// Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/scheduling', schedulingRoutes);
-app.use('/api/barbershops', barbershopRoutes);
-app.use('/api/barbershops', serviceRoutes);
-app.use('/api/reviews', reviewRoutes);
-app.use('/api/analytics', analyticsRoutes);
-app.use('/api/payments', paymentRoutes);
-app.use('/api/stripe', stripeRoutes);
-app.use('/api/favorites', favoritesRoutes);
-app.use('/api/cancellations', cancellationRoutes);
-app.use('/api/version', versionRoutes);
+console.log('[STARTUP] Health check route registered');
 
-// Health check
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+// Initialize and start server
+const startServer = async () => {
+  try {
+    console.log('[STARTUP] Loading application middleware and routes...');
+    
+    // Load middleware
+    await loadMiddleware();
+    
+    // Apply loaded middleware
+    if (paginationMiddleware) app.use(paginationMiddleware);
+    if (cacheMiddleware) app.use(cacheMiddleware(5 * 60 * 1000));
+    
+    console.log('[STARTUP] Middleware applied');
+    
+    // Load and register routes
+    const routes = await loadRoutes();
+    
+    app.use('/api/auth', routes.authRoutes);
+    app.use('/api/scheduling', routes.schedulingRoutes);
+    app.use('/api/barbershops', routes.barbershopRoutes);
+    app.use('/api/barbershops', routes.serviceRoutes);
+    app.use('/api/reviews', routes.reviewRoutes);
+    app.use('/api/analytics', routes.analyticsRoutes);
+    app.use('/api/payments', routes.paymentRoutes);
+    app.use('/api/stripe', routes.stripeRoutes);
+    app.use('/api/favorites', routes.favoritesRoutes);
+    app.use('/api/cancellations', routes.cancellationRoutes);
+    app.use('/api/version', routes.versionRoutes);
+    
+    console.log('[STARTUP] All routes registered');
+    
+    // Error handler
+    if (errorHandler) app.use(errorHandler);
+    
+    console.log('[STARTUP] Error handler applied');
+    
+    // Start listening
+    console.log(`[STARTUP] Starting server on 0.0.0.0:${PORT}`);
+    
+    return new Promise<void>((resolve, reject) => {
+      httpServer.listen(PORT, '0.0.0.0', () => {
+        console.log(`[SUCCESS] ✅ Server LIVE on port ${PORT}`);
+        console.log(`[SUCCESS] ✅ WebSocket ready on ws://0.0.0.0:${PORT}`);
+        resolve();
+      });
+
+      httpServer.on('error', (error: any) => {
+        console.error('[ERROR] HTTP Server Error:', error.message);
+        reject(error);
+      });
+    });
+    
+  } catch (error) {
+    console.error('[ERROR] Server startup failed:', error instanceof Error ? error.message : error);
+    console.error('[ERROR] Stack:', (error as any)?.stack);
+    process.exit(1);
+  }
+};
+
+// Handle process signals
+process.on('SIGTERM', () => {
+  console.log('[SHUTDOWN] SIGTERM received, closing server...');
+  httpServer.close(() => {
+    console.log('[SHUTDOWN] Server closed');
+    process.exit(0);
+  });
 });
 
-// Error Handler
-app.use(errorHandler);
+process.on('SIGINT', () => {
+  console.log('[SHUTDOWN] SIGINT received, closing server...');
+  httpServer.close(() => {
+    console.log('[SHUTDOWN] Server closed');
+    process.exit(0);
+  });
+});
 
-// Handle uncaught exceptions
+// Handle uncaught errors
 process.on('uncaughtException', (error) => {
-  console.error('❌ Uncaught Exception:', error);
+  console.error('[FATAL] Uncaught Exception:', error instanceof Error ? error.message : error);
+  console.error('[FATAL] Stack:', (error as Error)?.stack);
   process.exit(1);
 });
 
 process.on('unhandledRejection', (reason, promise) => {
-  console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
+  console.error('[FATAL] Unhandled Rejection:', reason);
   process.exit(1);
 });
 
-// Start server with error handling
-try {
-  console.log('🚀 Attempting to start server on port:', PORT);
-  
-  httpServer.listen(PORT, '0.0.0.0', () => {
-    console.log(`✅ Server running on port ${PORT}`);
-    console.log(`✅ WebSocket server listening on ws://0.0.0.0:${PORT}`);
-  });
-
-  httpServer.on('error', (error: any) => {
-    console.error('❌ HTTP Server Error:', error);
-    process.exit(1);
-  });
-
-  // Graceful shutdown
-  process.on('SIGTERM', () => {
-    console.log('SIGTERM signal received: closing HTTP server');
-    httpServer.close(() => {
-      console.log('HTTP server closed');
-      process.exit(0);
-    });
-  });
-} catch (error) {
-  console.error('❌ Server startup error:', error);
-  console.error('❌ Stack:', (error as any)?.stack);
+// Start the server
+console.log('[STARTUP] Initializing BarberFlow Backend...');
+startServer().catch((error) => {
+  console.error('[FATAL] Failed to start server:', error instanceof Error ? error.message : error);
   process.exit(1);
-}
+});
