@@ -93,6 +93,17 @@ app.get('/api/health', (req, res) => {
 // Error Handler
 app.use(errorHandler);
 
+// Handle uncaught exceptions
+process.on('uncaughtException', (error) => {
+  console.error('❌ Uncaught Exception:', error);
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
+  process.exit(1);
+});
+
 // Start server with error handling
 try {
   httpServer.listen(PORT, '0.0.0.0', () => {
