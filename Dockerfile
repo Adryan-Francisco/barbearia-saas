@@ -35,6 +35,12 @@ COPY --from=builder /app/dist ./dist
 # Copy Prisma schema and migrations
 COPY backend/prisma ./prisma
 
+# Copy generated Prisma client from builder
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+
+# Generate Prisma client in production stage
+RUN npx prisma generate
+
 # Expose port
 EXPOSE 3000
 
