@@ -1,4 +1,10 @@
 // Log MUITO cedo - antes de qualquer importação ou operação
+// Using stderr because it's always unbuffered
+process.stderr.write('\n[PRE-STARTUP-STDERR] Process started at ' + new Date().toISOString() + '\n');
+process.stderr.write('[PRE-STARTUP-STDERR] Node version: ' + process.version + '\n');
+process.stderr.write('[PRE-STARTUP-STDERR] Working directory: ' + process.cwd() + '\n');
+process.stderr.write('[PRE-STARTUP-STDERR] NODE_ENV: ' + (process.env.NODE_ENV || 'undefined') + '\n');
+
 console.error('[PRE-STARTUP] Process started at', new Date().toISOString());
 console.error('[PRE-STARTUP] Node version:', process.version);
 console.error('[PRE-STARTUP] Working directory:', process.cwd());
