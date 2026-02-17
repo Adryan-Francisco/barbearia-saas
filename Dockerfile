@@ -26,6 +26,10 @@ WORKDIR /app
 # Install OpenSSL required by Prisma
 RUN apk add --no-cache openssl
 
+# Force backend rebuild - 2026-02-17 CORS fix
+ARG BUILD_DATE=2026-02-17
+ENV BUILD_DATE=${BUILD_DATE}
+
 # Copy package files
 COPY backend/package*.json ./
 
