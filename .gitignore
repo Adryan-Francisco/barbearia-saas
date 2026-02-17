@@ -42,7 +42,6 @@ tmp/
 check-connection.ps1
 check-connection.sh
 docker-compose.yml
-Dockerfile
 install.bat
 QUICK_START.ps1
 seed.sql
