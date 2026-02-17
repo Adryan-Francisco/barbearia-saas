@@ -3,7 +3,20 @@
  * Todas as requisições devem passar por este arquivo para mantê-las consistentes
  */
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+// Garantir que a URL sempre tenha /api no final
+const getApiUrl = () => {
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+  
+  // Se já termina com /api, retorna como está
+  if (baseUrl.endsWith('/api')) {
+    return baseUrl;
+  }
+  
+  // Se não termina com /api, adiciona
+  return `${baseUrl}/api`;
+};
+
+const API_URL = getApiUrl();
 
 interface ApiError {
   message: string;
