@@ -13,7 +13,7 @@ interface ConnectedUser {
   userId: string;
   barbershopId: string;
   socketId: string;
-  role: 'client' | 'barbershop';
+  role: 'client' | 'barbershop' | 'public';
 }
 
 class WebSocketService {
@@ -50,13 +50,16 @@ class WebSocketService {
       const barbershopId = socket.handshake.auth.barbershopId;
       const role = socket.handshake.auth.role;
 
-      if (!userId || !barbershopId) {
+      if (!barbershopId) {
         next(new Error('Autenticação inválida'));
         return;
       }
 
+      const resolvedUserId = userId || 'public';
+      const resolvedRole = role || 'public';
+
       // Armazenar dados do usuário no socket
-      socket.data = { userId, barbershopId, role };
+      socket.data = { userId: resolvedUserId, barbershopId, role: resolvedRole };
       next();
     });
   }
@@ -201,6 +204,19 @@ class WebSocketService {
   }
 
   /**
+   * Emite atualização de horários disponíveis
+   */
+  emitAvailableSlots(barbershopId: string, payload: { date: string; slots: string[] }) {
+    if (!this.io) return;
+
+    this.io.to(`barbershop:${barbershopId}`).emit('slots:update', {
+      barbershopId,
+      ...payload,
+      timestamp: new Date(),
+    });
+  }
+
+  /**
    * Emite evento de métrica atualizada em tempo real
    */
   emitRealtimeMetrics(barbershopId: string, metrics: any) {
@@ -239,4 +255,4 @@ class WebSocketService {
 }
 
 // Exportar instância singleton
-export const websocketService = new WebSocketService();
+export const websocketService: WebSocketService = new WebSocketService();

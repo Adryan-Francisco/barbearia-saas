@@ -148,7 +148,72 @@ npm run build       # Build para produção
 npm run lint        # Verificar erros
 ```
 
-✅ Acesse em: **http://localhost:3000**
+---
+
+## 📱 Progressive Web App (PWA)
+
+O BarberFlow é uma **PWA** - pode ser instalada como app nativo em qualquer dispositivo!
+
+### ⚡ Funcionalidades PWA:
+
+- ✅ **Offline First**: Funciona sem conexão de internet
+- ✅ **Installable**: Instale como app nativa (Android, iOS, Windows, Mac)
+- ✅ **Fast**: Carregamento rápido com cache inteligente
+- ✅ **Responsive**: Se adapta a qualquer tamanho de tela
+- ✅ **Push Notifications**: Notificações em tempo real (em breve)
+
+### 🎯 Como Instalar:
+
+#### Desktop (Chrome/Edge):
+1. Abra http://localhost:3000
+2. Procure pelo ícone "Instalar" na barra de endereço
+3. Clique e siga as instruções
+
+#### Mobile:
+1. Abra em navegador mobile
+2. Toque no menu (⋮ ou Share)
+3. Procure por "Adicionar à Tela Inicial" ou "Instalar App"
+4. Confirme a instalação
+
+### 🎨 Configurar Ícones PWA:
+
+**1. Instale `sharp` para geração automática:**
+```bash
+cd frontend
+npm install --save-dev sharp
+```
+
+**2. Prepare uma imagem 512x512px chamada `icon-source.png` em `frontend/public/`**
+
+**3. Execute o script de geração:**
+```bash
+node generate-pwa-icons.js
+```
+
+Os ícones serão criados automaticamente em `frontend/public/icons/`
+
+> **Alternativa online**: Usar [PWA Asset Generator](https://pwa-asset-generator.netlify.app/) ou [RealFaviconGenerator](https://realfavicongenerator.net/)
+
+### 🧪 Verificar Service Worker:
+
+1. Abra DevTools (F12)
+2. Vá em **Application** → **Service Workers**
+3. Deve aparecer `service-worker.js` com status **activated**
+
+### 📋 Arquivos PWA:
+
+- `public/manifest.json` - Metadados da app
+- `public/service-worker.js` - Cache offline
+- `public/offline.html` - Página offline
+- `hooks/use-pwa.tsx` - Hook para gerenciar PWA
+- `components/pwa-install-button.tsx` - Botão de instalação
+- `components/pwa-diagnostics.tsx` - Diagnóstico PWA
+
+### 📖 Mais Detalhes:
+
+Veja [PWA_SETUP.md](./frontend/PWA_SETUP.md) para guia completo de configuração e testes.
+
+---✅ Acesse em: **http://localhost:3000**
 
 ---
 

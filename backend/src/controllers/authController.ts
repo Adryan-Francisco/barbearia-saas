@@ -8,15 +8,21 @@ import crypto from 'crypto';
 
 export async function register(req: Request, res: Response, next: NextFunction) {
   try {
+    console.log("📝 Tentativa de registro - dados recebidos:", req.body);
+    
     const { name, phone, password } = req.body;
 
     if (!name || !phone || !password) {
+      console.warn("⚠️ Campos obrigatórios faltando:", { hasName: !!name, hasPhone: !!phone, hasPassword: !!password });
       throw new AppError('Nome, telefone e senha são obrigatórios', 400);
     }
 
     // Validar força da senha
     const passwordValidation = validatePasswordStrength(password);
+    console.log("🔐 Validação da senha:", passwordValidation);
+    
     if (!passwordValidation.isValid) {
+      console.warn("⚠️ Senha fraca:", passwordValidation.errors);
       throw new AppError(
         `Senha fraca. Requisitos: ${passwordValidation.errors.join('; ')}`,
         400
@@ -29,6 +35,7 @@ export async function register(req: Request, res: Response, next: NextFunction) 
     });
 
     if (existingUser) {
+      console.warn("⚠️ Telefone já existe:", phone);
       throw new AppError('Telefone já registrado', 409);
     }
 
@@ -43,6 +50,8 @@ export async function register(req: Request, res: Response, next: NextFunction) 
       }
     });
 
+    console.log("✅ Usuário criado com sucesso:", user.id);
+
     const token = generateToken({ id: user.id, role: user.role });
 
     res.status(201).json({
@@ -56,6 +65,7 @@ export async function register(req: Request, res: Response, next: NextFunction) 
       }
     });
   } catch (error) {
+    console.error("❌ Erro no registro:", error);
     next(error);
   }
 }

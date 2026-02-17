@@ -69,15 +69,74 @@ async function apiCall<T>(
       headers,
     });
 
-    const data = await response.json().catch(() => null);
-
+    let data: any = null;
+    const contentType = response.headers.get('content-type');
+    
     if (!response.ok) {
+      try {
+        // Try to get raw text first
+        const responseClone = response.clone();
+        const responseText = await responseClone.text();
+        
+        console.log(`📄 [${response.status}] Raw response text:`, responseText);
+        console.log(`📄 [${response.status}] Content-Type:`, contentType);
+        
+        if (responseText) {
+          try {
+            data = JSON.parse(responseText);
+          } catch (parseError) {
+            console.warn(`⚠️ Failed to parse JSON, using raw text`);
+            data = { error: responseText };
+          }
+        } else {
+          console.warn(`⚠️ Empty response body`);
+          data = { error: response.statusText || 'Unknown error' };
+        }
+      } catch (error) {
+        console.error('🔥 Error reading response:', error);
+        data = { error: response.statusText || 'Unknown error' };
+      }
+
+      console.error(`🔴 API Error [${response.status}]:`, {
+        status: response.status,
+        statusText: response.statusText,
+        contentType,
+        data
+      });
+      
+      let errorMessage = response.statusText || 'Unknown error';
+      
+      // Parsear diferentes formatos de erro
+      if (typeof data === 'string') {
+        errorMessage = data;
+      } else if (data?.error) {
+        errorMessage = typeof data.error === 'string' ? data.error : (data.error.message || data.error.msg || response.statusText);
+      } else if (data?.message) {
+        errorMessage = data.message;
+      } else if (data?.msg) {
+        errorMessage = data.msg;
+      }
+      
       return {
         error: {
-          message: data?.error || response.statusText,
+          message: errorMessage || response.statusText || `HTTP ${response.status}`,
           status: response.status,
         },
       };
+    }
+
+    // Success response
+    try {
+      if (contentType?.includes('application/json')) {
+        const responseClone = response.clone();
+        const responseText = await responseClone.text();
+        data = responseText ? JSON.parse(responseText) : {};
+      } else {
+        data = await response.json().catch(() => ({}));
+      }
+    } catch (parseError) {
+      console.warn('⚠️ Error parsing success response:', parseError);
+      data = {};
     }
 
     return {
@@ -167,7 +226,7 @@ export const schedulingAPI = {
   getAppointments: () => apiCall('/scheduling/appointments'),
 
   getAvailableSlots: (barbershopId: string, date: string) =>
-    apiCall(`/scheduling/available-slots?barbershopId=${barbershopId}&date=${date}`),
+    apiCall(`/scheduling/available-slots?barbershop_id=${barbershopId}&date=${date}`),
 };
 
 // ==================== BARBERSHOP ====================

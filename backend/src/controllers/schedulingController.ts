@@ -5,10 +5,23 @@ import { sendWhatsAppMessage } from '../services/whatsappService';
 import { websocketService } from '../services/websocketService';
 import { getAvailableSlots, isSlotAvailable } from '../services/schedulingService';
 
-export async function createAppointment(req: Request, res: Response, next: NextFunction) {
+// Extend Express Request to include user
+interface AuthRequest extends Request {
+  user?: {
+    id: string;
+    name: string;
+    phone: string;
+    role: string;
+  };
+}
+
+export async function createAppointment(req: AuthRequest, res: Response, next: NextFunction) {
   try {
+    console.log("📋 Criar agendamento - req.user:", req.user);
+    console.log("📋 Criar agendamento - req.body:", req.body);
+    
     if (!req.user) {
-      throw new AppError('Não autorizado', 401);
+      throw new AppError('Não autorizado - usuário não encontrado', 401);
     }
 
     const { barbershop_id, service_id, appointment_date, appointment_time } = req.body;
@@ -49,6 +62,12 @@ export async function createAppointment(req: Request, res: Response, next: NextF
       }
     });
 
+    const updatedSlots = await getAvailableSlots(barbershop_id, appointment_date);
+    websocketService.emitAvailableSlots(barbershop_id, {
+      date: appointment_date,
+      slots: updatedSlots,
+    });
+
     // Notify via WebSocket
     websocketService.notifyAppointmentConfirmed(barbershop_id, {
       clientName: appointment.client.name,
@@ -82,13 +101,18 @@ export async function createAppointment(req: Request, res: Response, next: NextF
   }
 }
 
-export async function cancelAppointment(req: Request, res: Response, next: NextFunction) {
+export async function cancelAppointment(req: AuthRequest, res: Response, next: NextFunction) {
   try {
+    console.log("🗑️ [CANCEL] Iniciando cancelamento, appointmentId:", req.params.appointmentId);
+    console.log("📦 [CANCEL] req.user:", req.user);
+    
     if (!req.user) {
+      console.log("❌ [CANCEL] Usuário não autenticado");
       throw new AppError('Não autorizado', 401);
     }
 
     const { appointmentId } = req.params;
+    console.log("🔍 [CANCEL] Procurando appointmentId:", appointmentId);
 
     if (!appointmentId) {
       throw new AppError('ID do agendamento é obrigatório', 400);
@@ -99,21 +123,58 @@ export async function cancelAppointment(req: Request, res: Response, next: NextF
       include: { client: true }
     });
 
+    console.log("📋 [CANCEL] Agendamento encontrado:", appointment?.id, "Status:", appointment?.status);
+
     if (!appointment || appointment.clientId !== req.user.id) {
+      console.log("❌ [CANCEL] Agendamento não encontrado ou não pertence ao usuário");
       throw new AppError('Agendamento não encontrado', 404);
     }
 
-    const appointmentDateTime = appointment.appointmentDate;
-    const now = new Date();
-    const oneHourBefore = new Date(appointmentDateTime.getTime() - 60 * 60 * 1000);
-
-    if (now > oneHourBefore) {
-      throw new AppError('Não é possível cancelar com menos de 1 hora de antecedência', 409);
+    // Verificar se já foi cancelado
+    if (appointment.status === 'cancelled') {
+      console.log("⚠️ [CANCEL] Agendamento já estava cancelado");
+      throw new AppError('Este agendamento já foi cancelado', 409);
     }
+
+    // Verificar se já foi concluído
+    if (appointment.status === 'completed') {
+      console.log("⚠️ [CANCEL] Agendamento já foi concluído");
+      throw new AppError('Não é possível cancelar um agendamento concluído', 409);
+    }
+
+    // Permitir cancelamento apenas se o agendamento ainda não começou
+    // Combina data + hora para comparação correta
+    const [hours, minutes] = appointment.appointmentTime.split(':').map(Number);
+    const appointmentDateTime = new Date(appointment.appointmentDate);
+    appointmentDateTime.setHours(hours, minutes, 0, 0);
+    
+    const now = new Date();
+
+    console.log("� [CANCEL] Comparação de datas:");
+    console.log("  📅 Agendamento:", appointmentDateTime.toISOString());
+    console.log("  🕐 Agora:", now.toISOString());
+    console.log("  ✅ Pode cancelar?", now <= appointmentDateTime);
+
+    // Verificar se o agendamento já passou (começou)
+    if (now > appointmentDateTime) {
+      console.log("❌ [CANCEL] Agendamento já começou, não pode cancelar");
+      throw new AppError('Não é possível cancelar um agendamento que já começou', 409);
+    }
+
+    console.log("✅ [CANCEL] Validações passadas, procedendo com cancelamento");
 
     const updatedAppointment = await prisma.appointment.update({
       where: { id: appointmentId },
       data: { status: 'cancelled' }
+    });
+
+    console.log("✅ Agendamento cancelado:", updatedAppointment.id);
+
+    const appointmentDate = appointment.appointmentDate.toISOString().split('T')[0];
+    const updatedSlots = await getAvailableSlots(appointment.barbershopId, appointmentDate);
+    websocketService.emitAvailableSlots(appointment.barbershopId, {
+      date: appointmentDate,
+      slots: updatedSlots,
     });
 
     // Notify via WebSocket
@@ -132,16 +193,20 @@ export async function cancelAppointment(req: Request, res: Response, next: NextF
       console.error('Error sending WhatsApp cancellation message:', error);
     }
 
-    res.json({
+    const responsePayload = {
       message: 'Agendamento cancelado com sucesso',
       appointment: { id: appointmentId, status: 'cancelled' }
-    });
+    };
+    
+    console.log("📤 Enviando resposta de cancelamento:", responsePayload);
+    res.status(200).json(responsePayload);
   } catch (error) {
+    console.error('🔥 Erro em cancelAppointment:', error);
     next(error);
   }
 }
 
-export async function listAppointments(req: Request, res: Response, next: NextFunction) {
+export async function listAppointments(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     if (!req.user) {
       throw new AppError('Não autorizado', 401);
@@ -164,6 +229,15 @@ export async function listAppointments(req: Request, res: Response, next: NextFu
       appointment_date: a.appointmentDate,
       appointment_time: a.appointmentTime,
       status: a.status,
+      service: {
+        id: a.service.id,
+        name: a.service.name,
+        price: a.service.price
+      },
+      barbershop: {
+        id: a.barbershop.id,
+        name: a.barbershop.name
+      },
       service_name: a.service.name,
       barbershop_name: a.barbershop.name,
       created_at: a.createdAt,
@@ -176,15 +250,16 @@ export async function listAppointments(req: Request, res: Response, next: NextFu
   }
 }
 
-export async function getAvailableSlotsByBarbershop(req: Request, res: Response, next: NextFunction) {
+export async function getAvailableSlotsByBarbershop(req: AuthRequest, res: Response, next: NextFunction) {
   try {
-    const { barbershop_id, date } = req.query;
+    const { barbershop_id, barbershopId, date } = req.query;
+    const resolvedBarbershopId = (barbershop_id || barbershopId) as string | undefined;
 
-    if (!barbershop_id || !date) {
-      throw new AppError('Barbershop ID and date are required', 400);
+    if (!resolvedBarbershopId || !date) {
+      throw new AppError('Barbearia e data são obrigatórias', 400);
     }
 
-    const slots = await getAvailableSlots(barbershop_id as string, date as string);
+    const slots = await getAvailableSlots(resolvedBarbershopId, date as string);
 
     res.json({ date, slots });
   } catch (error) {

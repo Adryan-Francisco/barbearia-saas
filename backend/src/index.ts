@@ -45,7 +45,7 @@ app.use(cors({
 // Rate Limiting - Geral
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutos
-  max: process.env.NODE_ENV === 'production' ? 100 : 1000,
+  max: process.env.NODE_ENV === 'production' ? 100 : 10000, // Muito mais permissivo em dev
   message: 'Muitas requisições de seu IP, tente novamente mais tarde',
   standardHeaders: true,
   legacyHeaders: false,
@@ -55,7 +55,7 @@ app.use('/api/', limiter);
 // Rate Limiting - Autenticação (mais restritivo)
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 5, // Máximo 5 tentativas
+  max: process.env.NODE_ENV === 'production' ? 5 : 100, // Muito mais permissivo em dev
   skipSuccessfulRequests: true, // Não conta sucessos
   message: 'Muitas tentativas de autenticação. Tente novamente em 15 minutos',
 });

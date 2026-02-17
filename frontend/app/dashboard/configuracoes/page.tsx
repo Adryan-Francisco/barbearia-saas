@@ -48,19 +48,28 @@ export default function ConfiguraçõesPage() {
       const token = localStorage.getItem("token")
       if (!token) return
 
-      const res = await fetch("/api/barbershops/me", {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api"
+      const res = await fetch(`${apiUrl}/barbershops/me`, {
         headers: { Authorization: `Bearer ${token}` },
       })
 
-      if (!res.ok) throw new Error("Erro ao buscar barbearia")
+      if (!res.ok) {
+        if (res.status === 404) {
+          // Sem barbearia cadastrada
+          return
+        }
+        throw new Error("Erro ao buscar barbearia")
+      }
 
       const data = await res.json()
-      setBarbershop(data)
-      setFormData({
-        name: data.name || "",
-        phone: data.phone || "",
-        address: data.address || "",
-      })
+      if (data?.barbershop) {
+        setBarbershop(data.barbershop)
+        setFormData({
+          name: data.barbershop.name || "",
+          phone: data.barbershop.phone || "",
+          address: data.barbershop.address || "",
+        })
+      }
     } catch (error) {
       console.error("Erro ao buscar barbearia:", error)
     } finally {
@@ -74,7 +83,8 @@ export default function ConfiguraçõesPage() {
       const token = localStorage.getItem("token")
       if (!token || !barbershop) return
 
-      const res = await fetch(`/api/barbershops/${barbershop.id}`, {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api"
+      const res = await fetch(`${apiUrl}/barbershops/${barbershop.id}`, {
         method: "PUT",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -86,7 +96,7 @@ export default function ConfiguraçõesPage() {
       if (!res.ok) throw new Error("Erro ao salvar alterações")
 
       const updated = await res.json()
-      setBarbershop(updated)
+      setBarbershop(updated.barbershop)
       alert("Alterações salvas com sucesso!")
     } catch (error) {
       console.error("Erro ao salvar:", error)
@@ -102,7 +112,8 @@ export default function ConfiguraçõesPage() {
       const token = localStorage.getItem("token")
       if (!token || !barbershop) return
 
-      const res = await fetch(`/api/barbershops/${barbershop.id}`, {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api"
+      const res = await fetch(`${apiUrl}/barbershops/${barbershop.id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       })

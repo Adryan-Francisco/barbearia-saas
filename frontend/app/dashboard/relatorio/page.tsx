@@ -69,15 +69,17 @@ export default function RelatorioPage() {
       if (!token) return
 
       // Get barbershop
-      const barbershopRes = await fetch("/api/barbershops/me", {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api"
+      const barbershopRes = await fetch(`${apiUrl}/barbershops/me`, {
         headers: { Authorization: `Bearer ${token}` },
       })
-      const barbershop = await barbershopRes.json()
+      const barbershopData = await barbershopRes.json()
+      const barbershop = barbershopData?.barbershop
 
-      if (!barbershop.id) return
+      if (!barbershop?.id) return
 
       // Get stats
-      const statsRes = await fetch(`/api/barbershops/${barbershop.id}/stats`, {
+      const statsRes = await fetch(`${apiUrl}/barbershops/${barbershop.id}/stats`, {
         headers: { Authorization: `Bearer ${token}` },
       })
       const stats = await statsRes.json()
@@ -85,7 +87,7 @@ export default function RelatorioPage() {
 
       // Get appointments
       const appointmentsRes = await fetch(
-        `/api/barbershops/${barbershop.id}/appointments`,
+        `${apiUrl}/barbershops/${barbershop.id}/appointments`,
         { headers: { Authorization: `Bearer ${token}` } }
       )
       const appoData = await appointmentsRes.json()
@@ -109,7 +111,7 @@ export default function RelatorioPage() {
       })
 
       // Get clients
-      const clientsRes = await fetch(`/api/analytics/${barbershop.id}/clients`, {
+      const clientsRes = await fetch(`${apiUrl}/analytics/${barbershop.id}/clients`, {
         headers: { Authorization: `Bearer ${token}` },
       })
       const clientsData = await clientsRes.json()

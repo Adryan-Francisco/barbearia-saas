@@ -116,25 +116,40 @@ export default function ClientAppointmentsPage() {
     } else if (result.data && Array.isArray(result.data)) {
       // Transformar dados da API para o formato esperado
       const transformedAppointments = result.data.map((apt: any) => {
-        const date = new Date(`${apt.appointment_date}T${apt.appointment_time}`)
-        const formattedDate = date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })
+        // Corrigir parsing de data - pode vir como string ISO ou como objeto Date
+        let dateObj: Date;
+        if (typeof apt.appointmentDate === 'string') {
+          // Se for string ISO (YYYY-MM-DD)
+          dateObj = new Date(apt.appointmentDate + 'T00:00:00');
+        } else if (apt.appointmentDate instanceof Date) {
+          dateObj = apt.appointmentDate;
+        } else {
+          dateObj = new Date(); // fallback
+        }
+        
+        const formattedDate = dateObj.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })
         
         // Converter status do inglês para português
         let statusPt: "confirmado" | "concluido" | "cancelado" = "confirmado"
-        if (apt.status === "cancelled") statusPt = "cancelado"
-        if (apt.status === "completed") statusPt = "concluido"
+        if (apt.status === "cancelled" || apt.status === "cancelado") statusPt = "cancelado"
+        if (apt.status === "completed" || apt.status === "concluido") statusPt = "concluido"
         
         return {
           id: apt.id,
-          service: apt.service_name || "Serviço desconhecido",
-          barber: apt.barbershop_name || "Barbearia desconhecida",
+          service: apt.service?.name || apt.service_name || "Serviço desconhecido",
+          barber: apt.barbershop?.name || apt.barbershop_name || "Barbearia desconhecida",
           date: formattedDate,
-          time: apt.appointment_time,
-          price: 0, // Precisamos adicionar o preço na API
+          time: apt.appointmentTime || apt.appointment_time || "Horário não informado",
+          price: apt.service?.price || 0,
           status: statusPt
         }
       })
+      console.log("✅ Agendamentos carregados:", transformedAppointments)
+      console.log("📊 Agendamentos brutos da API:", appointments)
       setLocalAppointments(transformedAppointments)
+    } else {
+      console.log("ℹ️ Sem agendamentos ou dados vazios")
+      setLocalAppointments([])
     }
     
     setIsLoading(false)
@@ -144,18 +159,35 @@ export default function ClientAppointmentsPage() {
   const past = localAppointments.filter(a => a.status === "concluido")
   const cancelled = localAppointments.filter(a => a.status === "cancelado")
 
+  const totalSpent = past.reduce((sum, a) => sum + (a.price || 0), 0)
+  
+  console.log("📊 Stats:");
+  console.log("  📦 Todos os agendamentos:", localAppointments);
+  console.log("  ✅ Próximos:", upcoming.length, upcoming);
+  console.log("  ⏱️ Concluídos:", past.length, past);
+  console.log("  ❌ Cancelados:", cancelled.length, cancelled);
+  console.log("  💰 Total gasto:", totalSpent);
+
   function handleCancel() {
     if (cancelId) {
       const appointmentToCancel = localAppointments.find(a => a.id === cancelId)
       
+      console.log("🗑️ Iniciando cancelamento de:", cancelId)
+      console.log("📍 Agendamento:", appointmentToCancel)
+      
       schedulingAPI.cancelAppointment(cancelId).then((result) => {
+        console.log("📡 Resposta completa do servidor:", result)
+        
         if (result.error) {
+          const errorMessage = result.error?.message || JSON.stringify(result.error) || 'Erro desconhecido ao cancelar';
+          console.error("❌ Erro ao cancelar:", errorMessage)
           toast({
             title: "Erro ao cancelar",
-            description: result.error.message,
+            description: errorMessage,
             variant: "destructive",
           })
         } else {
+          console.log("✅ Agendamento cancelado com sucesso")
           setLocalAppointments(prev =>
             prev.map(a => a.id === cancelId ? { ...a, status: "cancelado" as const } : a)
           )
@@ -165,6 +197,14 @@ export default function ClientAppointmentsPage() {
             description: `Agendamento de ${appointmentToCancel?.service} foi cancelado`,
           })
         }
+        setCancelId(null)
+      }).catch((error) => {
+        console.error("🔥 Erro de rede:", error)
+        toast({
+          title: "Erro na conexão",
+          description: error?.message || "Não foi possível conectar ao servidor",
+          variant: "destructive",
+        })
         setCancelId(null)
       })
     }
@@ -210,7 +250,7 @@ export default function ClientAppointmentsPage() {
             </div>
             <div>
               <p className="text-2xl font-bold text-primary">
-                R$ {localAppointments.filter(a => a.status === "concluido").reduce((sum, a) => sum + a.price, 0)}
+                R$ {totalSpent}
               </p>
               <p className="text-xs text-muted-foreground">Total gasto</p>
             </div>

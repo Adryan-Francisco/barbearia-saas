@@ -1,20 +1,46 @@
-import { getDatabase } from '../utils/database';
+import { prisma } from '../utils/prisma';
+
+function getDateRange(date: string) {
+  const [year, month, day] = date.split('-').map(Number);
+  const start = new Date(year, month - 1, day, 0, 0, 0, 0);
+  const end = new Date(year, month - 1, day, 23, 59, 59, 999);
+  return { start, end };
+}
 
 export async function getAvailableSlots(barbershopId: string, date: string): Promise<string[]> {
-  const db = await getDatabase();
+  const { start, end } = getDateRange(date);
 
-  // Horários padrão da barbearia (9:00 - 18:00)
-  const startHour = 9;
-  const endHour = 18;
+  const appointments = await prisma.appointment.findMany({
+    where: {
+      barbershopId,
+      appointmentDate: {
+        gte: start,
+        lte: end,
+      },
+      status: {
+        not: 'cancelled',
+      },
+    },
+    select: {
+      appointmentTime: true,
+    },
+  });
+
+  const bookedTimes = new Set(appointments.map((appointment) => appointment.appointmentTime));
+
+  // Horários padrão da barbearia (9:00 - 18:30), em intervalos de 30 min
+  const startMinutes = 9 * 60;
+  const endMinutes = 18 * 60 + 30;
+  const slotStepMinutes = 30;
 
   const availableSlots: string[] = [];
 
-  for (let hour = startHour; hour < endHour; hour++) {
-    const time = `${String(hour).padStart(2, '0')}:00`;
-    
-    const isAvailable = await isSlotAvailable(barbershopId, date, time);
-    
-    if (isAvailable) {
+  for (let minutes = startMinutes; minutes <= endMinutes; minutes += slotStepMinutes) {
+    const hour = Math.floor(minutes / 60);
+    const minute = minutes % 60;
+    const time = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+
+    if (!bookedTimes.has(time)) {
       availableSlots.push(time);
     }
   }
@@ -23,15 +49,24 @@ export async function getAvailableSlots(barbershopId: string, date: string): Pro
 }
 
 export async function isSlotAvailable(barbershopId: string, date: string, time: string): Promise<boolean> {
-  const db = await getDatabase();
+  const { start, end } = getDateRange(date);
 
-  // Verificar se já existe agendamento nesse horário
-  const existingAppointment = db.appointments.find((a: any) => 
-    a.barbershop_id === barbershopId &&
-    a.appointment_date === date &&
-    a.appointment_time === time &&
-    a.status !== 'cancelled'
-  );
+  const existingAppointment = await prisma.appointment.findFirst({
+    where: {
+      barbershopId,
+      appointmentDate: {
+        gte: start,
+        lte: end,
+      },
+      appointmentTime: time,
+      status: {
+        not: 'cancelled',
+      },
+    },
+    select: {
+      id: true,
+    },
+  });
 
   return !existingAppointment;
 }

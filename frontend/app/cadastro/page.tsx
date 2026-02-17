@@ -27,6 +27,7 @@ interface RegisterResponse {
 export default function SignupPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [userType, setUserType] = useState<"client" | "barbershop">("client")
   const [name, setName] = useState("")
   const [phone, setPhone] = useState("")
   const [password, setPassword] = useState("")
@@ -43,11 +44,15 @@ export default function SignupPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
 
+    console.log("📝 Tentativa de registro:", { name, phone, userType });
+    console.log("🔐 Validação de senha:", passwordStrength);
+
     // Validar força da senha antes de enviar
     if (!passwordStrength.isValid) {
+      console.warn("⚠️ Senha rejeitada no frontend:", passwordStrength.errors);
       toast({
         title: "Senha fraca",
-        description: "A senha não atende aos requisitos de segurança",
+        description: passwordStrength.errors.join(", "),
         variant: "destructive",
       })
       return
@@ -55,9 +60,25 @@ export default function SignupPage() {
 
     setIsLoading(true)
     
-    const result = await authAPI.register(name, phone, password)
+    let result
+
+    if (userType === "barbershop") {
+      console.log("📋 Enviando registro de barbearia...");
+      result = await authAPI.barbershopRegister({
+        name,
+        phone,
+        password,
+        email: ""
+      })
+    } else {
+      console.log("📋 Enviando registro de cliente...");
+      result = await authAPI.register(name, phone, password)
+    }
+    
+    console.log("📤 Resposta da API:", result);
     
     if (result.error) {
+      console.error("❌ Erro no cadastro:", result.error);
       toast({
         title: "Erro no cadastro",
         description: result.error.message,
@@ -69,6 +90,7 @@ export default function SignupPage() {
 
     if (result.data) {
       const data = result.data as RegisterResponse
+      console.log("✅ Token recebido:", data.token?.substring(0, 20) + "...");
       localStorage.setItem('token', data.token)
       localStorage.setItem('user', JSON.stringify(data.user))
       
@@ -77,7 +99,9 @@ export default function SignupPage() {
         description: "Cadastro realizado com sucesso",
       })
       
-      router.push("/cliente")
+      const redirectPath = userType === "barbershop" ? "/dashboard" : "/cliente"
+      console.log("🔄 Redirecionando para:", redirectPath);
+      router.push(redirectPath)
     }
     
     setIsLoading(false)
@@ -112,6 +136,37 @@ export default function SignupPage() {
               <p className="text-sm text-muted-foreground mt-1">
                 Cadastre-se para agendar servicos e acompanhar seu historico
               </p>
+            </div>
+
+            {/* Seletor de tipo de usuário */}
+            <div className="mb-6 p-4 bg-secondary rounded-lg border border-border">
+              <Label className="text-sm font-medium text-card-foreground mb-3 block">
+                Você é um:
+              </Label>
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setUserType("client")}
+                  className={`flex-1 p-3 rounded-lg border-2 transition-all ${
+                    userType === "client"
+                      ? "border-primary bg-primary/10 text-primary font-medium"
+                      : "border-border text-muted-foreground hover:border-primary/50"
+                  }`}
+                >
+                  👤 Cliente
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setUserType("barbershop")}
+                  className={`flex-1 p-3 rounded-lg border-2 transition-all ${
+                    userType === "barbershop"
+                      ? "border-primary bg-primary/10 text-primary font-medium"
+                      : "border-border text-muted-foreground hover:border-primary/50"
+                  }`}
+                >
+                  ✂️ Barbeiro
+                </button>
+              </div>
             </div>
 
             <form onSubmit={handleSubmit} className="flex flex-col gap-4">

@@ -18,39 +18,32 @@ export interface PasswordStrengthResult {
 export function validatePasswordStrength(password: string): PasswordStrengthResult {
   const errors: string[] = [];
   const requirements = {
-    minLength: password.length >= 8,
+    minLength: password.length >= 6, // Reduzido de 8 para 6
     hasUppercase: /[A-Z]/.test(password),
     hasLowercase: /[a-z]/.test(password),
     hasNumber: /\d/.test(password),
     hasSpecialChar: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password),
   };
 
-  // Validar requisitos
+  // Validar requisitos menos rigorosos
   if (!requirements.minLength) {
-    errors.push('Mínimo 8 caracteres');
+    errors.push('Mínimo 6 caracteres');
   }
-  if (!requirements.hasUppercase) {
-    errors.push('Pelo menos 1 letra maiúscula (A-Z)');
-  }
-  if (!requirements.hasLowercase) {
-    errors.push('Pelo menos 1 letra minúscula (a-z)');
-  }
-  if (!requirements.hasNumber) {
-    errors.push('Pelo menos 1 número (0-9)');
-  }
-  if (!requirements.hasSpecialChar) {
-    errors.push('Pelo menos 1 caractere especial (!@#$%^&* etc)');
+  // Apenas um de maiúscula, minúscula ou número é necessário
+  const hasBasicVariety = requirements.hasUppercase || requirements.hasLowercase || requirements.hasNumber;
+  if (!hasBasicVariety) {
+    errors.push('Use letras ou números');
   }
 
   // Determinar força da senha
   const metRequirements = Object.values(requirements).filter(Boolean).length;
   let strength: 'weak' | 'fair' | 'good' | 'strong' = 'weak';
 
-  if (metRequirements === 5) {
+  if (metRequirements >= 4) {
     strength = 'strong';
-  } else if (metRequirements === 4) {
+  } else if (metRequirements >= 3) {
     strength = 'good';
-  } else if (metRequirements === 3) {
+  } else if (metRequirements >= 2) {
     strength = 'fair';
   }
 

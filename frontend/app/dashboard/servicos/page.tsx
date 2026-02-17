@@ -70,7 +70,8 @@ export default function ServicosPage() {
       }
 
       // Get barbershop
-      const barbershopRes = await fetch("/api/barbershops/me", {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api"
+      const barbershopRes = await fetch(`${apiUrl}/barbershops/me`, {
         headers: { Authorization: `Bearer ${token}` },
       })
       
@@ -78,7 +79,8 @@ export default function ServicosPage() {
         throw new Error("Erro ao buscar barbearia")
       }
       
-      const barbershop = await barbershopRes.json()
+      const barbershopData = await barbershopRes.json()
+      const barbershop = barbershopData?.barbershop
 
       if (!barbershop?.id) {
         console.warn("Barbearia não encontrada")
@@ -87,7 +89,7 @@ export default function ServicosPage() {
       }
 
       // Get services
-      const servicesRes = await fetch(`/api/barbershops/${barbershop.id}/services`, {
+      const servicesRes = await fetch(`${apiUrl}/barbershops/${barbershop.id}/services`, {
         headers: { Authorization: `Bearer ${token}` },
       })
       

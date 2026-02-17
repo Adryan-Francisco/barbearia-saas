@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -20,6 +20,9 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useRouter } from "next/navigation"
+import { useToast } from "@/hooks/use-toast"
+import { schedulingAPI } from "@/lib/api"
+import { io } from "socket.io-client"
 
 const placeholderImage = "/placeholder.svg"
 
@@ -71,6 +74,12 @@ interface Barbershop {
   barbers?: Barber[]
 }
 
+interface SlotsUpdatePayload {
+  barbershopId: string
+  date: string
+  slots: string[]
+}
+
 const defaultServices = [
   { id: "corte", name: "Corte Masculino", price: 55, duration: "45 min", icon: Scissors },
   { id: "barba", name: "Barba Completa", price: 40, duration: "30 min", icon: Droplets },
@@ -105,8 +114,16 @@ function getDaysOfWeek(offset: number) {
 const dayNames = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab"]
 const monthNames = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"]
 
+function formatDateForApi(date: Date) {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, "0")
+  const day = String(date.getDate()).padStart(2, "0")
+  return `${year}-${month}-${day}`
+}
+
 export default function AgendarPage() {
   const router = useRouter()
+  const { toast } = useToast()
   const [barbershopsData, setBarbershopsData] = useState<Barbershop[]>([])
   const [loading, setLoading] = useState(true)
   const [step, setStep] = useState(1)
@@ -118,25 +135,145 @@ export default function AgendarPage() {
   const [selectedTime, setSelectedTime] = useState<string | null>(null)
   const [confirmed, setConfirmed] = useState(false)
   const [paymentMethod, setPaymentMethod] = useState<"credit" | "debit" | "pix" | null>(null)
+  const [availableSlots, setAvailableSlots] = useState<string[] | null>(null)
+  const [slotsLoading, setSlotsLoading] = useState(false)
+  const [slotsError, setSlotsError] = useState<string | null>(null)
+  const [submitting, setSubmitting] = useState(false)
+  const selectedDateRef = useRef<Date | null>(null)
+  const selectedBarbershopIdRef = useRef<string | null>(null)
+
+  interface AvailableSlotsResponse {
+    slots: string[]
+  }
 
   useEffect(() => {
     fetchBarbershops()
   }, [])
 
+  useEffect(() => {
+    selectedDateRef.current = selectedDate
+  }, [selectedDate])
+
+  useEffect(() => {
+    selectedBarbershopIdRef.current = selectedBarbershop?.id ?? null
+  }, [selectedBarbershop])
+
+  useEffect(() => {
+    if (!selectedBarbershop) return
+
+    const socketUrl = process.env.NEXT_PUBLIC_API_URL
+      ? process.env.NEXT_PUBLIC_API_URL.replace(/\/api\/?$/, "")
+      : "http://localhost:3001"
+
+    const socket = io(socketUrl, {
+      path: "/socket.io",
+      transports: ["websocket", "polling"],
+      auth: {
+        barbershopId: selectedBarbershop.id,
+        role: "public",
+      },
+    })
+
+    socket.on("slots:update", (payload: SlotsUpdatePayload) => {
+      const currentDate = selectedDateRef.current
+      const currentBarbershopId = selectedBarbershopIdRef.current
+
+      if (!currentDate || !currentBarbershopId) return
+      if (payload.barbershopId !== currentBarbershopId) return
+      if (payload.date !== formatDateForApi(currentDate)) return
+
+      setAvailableSlots(payload.slots ?? [])
+      setSlotsLoading(false)
+    })
+
+    return () => {
+      socket.disconnect()
+    }
+  }, [selectedBarbershop])
+
+  useEffect(() => {
+    const fetchSlots = async () => {
+      if (!selectedBarbershop || !selectedDate) {
+        setAvailableSlots(null)
+        setSlotsError(null)
+        return
+      }
+
+      setSlotsLoading(true)
+      setSlotsError(null)
+
+      const result = await schedulingAPI.getAvailableSlots(
+        selectedBarbershop.id,
+        formatDateForApi(selectedDate)
+      )
+
+      if (result.error) {
+        setAvailableSlots(null)
+        setSlotsError(result.error.message)
+        toast({
+          variant: "destructive",
+          title: "Erro ao carregar horários",
+          description: result.error.message,
+        })
+      } else {
+        const slotsData = result.data as AvailableSlotsResponse | undefined
+        setAvailableSlots(slotsData?.slots ?? [])
+      }
+
+      setSlotsLoading(false)
+    }
+
+    fetchSlots()
+  }, [selectedBarbershop, selectedDate, toast])
+
+  useEffect(() => {
+    if (availableSlots && selectedTime && !availableSlots.includes(selectedTime)) {
+      setSelectedTime(null)
+    }
+  }, [availableSlots, selectedTime])
+
   async function fetchBarbershops() {
     try {
+      console.log("🔄 Iniciando fetch de barbearias...")
       const res = await fetch("http://localhost:3001/api/barbershops")
+      console.log("📊 Status da resposta:", res.status, res.ok)
+      
       if (res.ok) {
         const data = await res.json()
-        // O backend retorna { total, barbershops }
-        const shops = Array.isArray(data) ? data : data.barbershops || []
+        console.log("✅ Resposta da API completa:", data)
+        console.log("📦 Total:", data?.total)
+        console.log("🏪 Barbershops array:", data?.barbershops)
+        
+        // O backend retorna { total, barbershops } ou só um array
+        let shops = []
+        if (Array.isArray(data)) {
+          console.log("📋 Tipo: Array direto")
+          shops = data
+        } else if (data?.barbershops && Array.isArray(data.barbershops)) {
+          console.log("📋 Tipo: Object com barbershops array")
+          shops = data.barbershops
+        } else if (data?.total && data?.barbershops) {
+          console.log("📋 Tipo: Object com total e barbershops")
+          shops = data.barbershops
+        } else {
+          console.warn("⚠️ Estrutura inesperada:", data)
+        }
+        
+        console.log("✅ Barbearias processadas:", shops)
+        console.log("🔢 Total de barbearias:", shops.length)
         setBarbershopsData(shops)
+        
+        if (shops.length === 0) {
+          console.warn("⚠️ Nenhuma barbearia encontrada na resposta")
+        }
       } else {
-        console.error("Erro ao buscar barbearias")
+        console.error("❌ Erro ao buscar barbearias:", res.status, res.statusText)
+        const errorText = await res.text()
+        console.error("Detalhes do erro:", errorText)
         setBarbershopsData([])
       }
     } catch (error) {
-      console.error("Erro ao conectar à API:", error)
+      console.error("❌ Erro ao conectar à API:", error)
       setBarbershopsData([])
     } finally {
       setLoading(false)
@@ -144,7 +281,8 @@ export default function AgendarPage() {
   }
 
   const days = getDaysOfWeek(weekOffset)
-  const unavailableTimes = ["10:00", "14:00", "15:30", "17:00"]
+  const isSlotUnavailable = (time: string) =>
+    availableSlots ? !availableSlots.includes(time) : false
 
   const handleSelectBarbershop = (shop: Barbershop) => {
     setSelectedBarbershop(shop)
@@ -167,10 +305,73 @@ export default function AgendarPage() {
     }
   }
 
-  const handleConfirm = () => {
-    if (selectedBarbershop && selectedService && selectedBarber && selectedDate && selectedTime && paymentMethod) {
-      setConfirmed(true)
+  const handleConfirm = async () => {
+    if (!selectedBarbershop || !selectedService || !selectedBarber || !selectedDate || !selectedTime || !paymentMethod) {
+      toast({
+        variant: "destructive",
+        title: "Dados incompletos",
+        description: "Selecione todos os campos antes de confirmar o agendamento.",
+      })
+      return
     }
+
+    if (submitting) return
+
+    console.log("🔑 Token verificado:", localStorage.getItem('token') ? "✅ Existe" : "❌ Não existe")
+    console.log("📋 Dados do agendamento:", {
+      barbershop_id: selectedBarbershop.id,
+      service_id: selectedService,
+      appointment_date: formatDateForApi(selectedDate),
+      appointment_time: selectedTime,
+    })
+
+    setSubmitting(true)
+
+    const result = await schedulingAPI.createAppointment({
+      barbershop_id: selectedBarbershop.id,
+      service_id: selectedService,
+      appointment_date: formatDateForApi(selectedDate),
+      appointment_time: selectedTime,
+    })
+
+    setSubmitting(false)
+
+    if (result.error) {
+      console.error("❌ Erro na API:", result.error)
+      
+      if (result.error.status === 401) {
+        console.warn("⚠️ Não autenticado - token pode estar inválido")
+        toast({
+          variant: "destructive",
+          title: "Faça login para agendar",
+          description: "Entre com sua conta para confirmar o agendamento.",
+        })
+        return
+      }
+
+      if (result.error.status === 409) {
+        toast({
+          variant: "destructive",
+          title: "Horário indisponível",
+          description: result.error.message,
+        })
+        return
+      }
+
+      toast({
+        variant: "destructive",
+        title: "Não foi possível agendar",
+        description: result.error.message,
+      })
+      return
+    }
+
+    console.log("✅ Agendamento criado com sucesso!")
+    toast({
+      title: "Agendamento confirmado",
+      description: "Você receberá uma confirmação por WhatsApp em breve.",
+    })
+    setConfirmed(true)
   }
 
   const handleReset = () => {
@@ -182,6 +383,10 @@ export default function AgendarPage() {
     setSelectedTime(null)
     setPaymentMethod(null)
     setConfirmed(false)
+    setAvailableSlots(null)
+    setSlotsError(null)
+    setSlotsLoading(false)
+    setSubmitting(false)
   }
 
   const handleBack = () => {
@@ -216,6 +421,9 @@ export default function AgendarPage() {
           ) : barbershopsData.length === 0 ? (
             <div className="text-center py-12">
               <p className="text-muted-foreground mb-4">Nenhuma barbearia cadastrada no sistema</p>
+              <p className="text-xs text-muted-foreground bg-secondary p-4 rounded mb-4 text-left">
+                DEBUG - Dados recebidos: {JSON.stringify(barbershopsData, null, 2)}
+              </p>
               <Button asChild variant="outline">
                 <Link href="/">Voltar para Home</Link>
               </Button>
@@ -438,24 +646,36 @@ export default function AgendarPage() {
             {selectedDate && (
               <div>
                 <h3 className="font-medium text-foreground mb-3">Selecione o Horário</h3>
+                {slotsLoading && (
+                  <p className="text-sm text-muted-foreground mb-2">Carregando horários disponíveis...</p>
+                )}
+                {!slotsLoading && slotsError && (
+                  <p className="text-sm text-destructive mb-2">{slotsError}</p>
+                )}
+                {!slotsLoading && availableSlots && availableSlots.length === 0 && !slotsError && (
+                  <p className="text-sm text-muted-foreground mb-2">Nenhum horário disponível para esta data.</p>
+                )}
                 <div className="grid grid-cols-4 gap-2">
-                  {timeSlots.map((time) => (
-                    <button
-                      key={time}
-                      onClick={() => setSelectedTime(time)}
-                      disabled={unavailableTimes.includes(time)}
-                      className={cn(
-                        "p-2 rounded-lg text-sm font-medium transition-colors",
-                        selectedTime === time
-                          ? "bg-primary text-primary-foreground"
-                          : unavailableTimes.includes(time)
-                          ? "bg-secondary/50 text-muted-foreground cursor-not-allowed opacity-50"
-                          : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
-                      )}
-                    >
-                      {time}
-                    </button>
-                  ))}
+                  {timeSlots.map((time) => {
+                    const disabled = slotsLoading || isSlotUnavailable(time)
+                    return (
+                      <button
+                        key={time}
+                        onClick={() => setSelectedTime(time)}
+                        disabled={disabled}
+                        className={cn(
+                          "p-2 rounded-lg text-sm font-medium transition-colors",
+                          selectedTime === time
+                            ? "bg-primary text-primary-foreground"
+                            : disabled
+                            ? "bg-secondary/50 text-muted-foreground cursor-not-allowed opacity-50"
+                            : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                        )}
+                      >
+                        {time}
+                      </button>
+                    )
+                  })}
                 </div>
               </div>
             )}
@@ -576,10 +796,10 @@ export default function AgendarPage() {
               </Button>
               <Button
                 onClick={handleConfirm}
-                disabled={!paymentMethod}
+                disabled={!paymentMethod || submitting}
                 className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90"
               >
-                Confirmar Agendamento
+                {submitting ? "Confirmando..." : "Confirmar Agendamento"}
               </Button>
             </div>
           </div>
@@ -589,9 +809,19 @@ export default function AgendarPage() {
   }
 
   // Confirmação Final
-  if (confirmed && selectedBarbershop && selectedService && selectedBarber && selectedDate && selectedTime) {
+  if (confirmed && selectedBarbershop && selectedService && selectedDate && selectedTime) {
     const service = (selectedBarbershop.services || []).find(s => s.id === selectedService)
-    const barber = (selectedBarbershop.barbers || []).find(b => b.id === selectedBarber)
+    const barber = selectedBarber ? (selectedBarbershop.barbers || []).find(b => b.id === selectedBarber) : null
+    
+    console.log("🎉 Renderizando tela de confirmação:", {
+      confirmed,
+      selectedBarbershop: !!selectedBarbershop,
+      selectedService,
+      selectedBarber,
+      selectedDate,
+      selectedTime
+    });
+    
     return (
       <div className="min-h-screen bg-background px-6 py-12">
         <div className="mx-auto max-w-lg flex flex-col items-center justify-center py-16 text-center">
@@ -610,10 +840,12 @@ export default function AgendarPage() {
                 <p className="font-semibold text-foreground text-lg">{service?.name}</p>
               </div>
               <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Barbeiro</span>
-                  <span className="font-medium">{barber?.name || selectedBarber}</span>
-                </div>
+                {barber && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Barbeiro</span>
+                    <span className="font-medium">{barber?.name || selectedBarber}</span>
+                  </div>
+                )}
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Data</span>
                   <span className="font-medium">{selectedDate.getDate()} {monthNames[selectedDate.getMonth()]}</span>

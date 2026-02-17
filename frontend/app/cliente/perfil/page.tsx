@@ -243,21 +243,6 @@ export default function PerfilPage() {
         </CardContent>
       </Card>
 
-      {/* Seção de informações do sistema */}
-      <Card className="mb-8 bg-gray-50">
-        <CardHeader>
-          <CardTitle>Informações do Sistema</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">Versão:</span>
-              <span className="text-sm font-medium">v0.1.0</span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Seção de mudança de senha */}
       <Card>
         <CardHeader>

@@ -1,6 +1,6 @@
 "use client"
 
-import { use, useState } from "react"
+import { use, useState, useEffect } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { Card, CardContent } from "@/components/ui/card"
@@ -200,8 +200,14 @@ export default function BarbershopBookingPage({
   params: Promise<{ barbershopId: string }>
 }) {
   const { barbershopId } = use(params)
-  const shop = barbershopsData[barbershopId]
+  const router = useRouter()
+  
+  // Estados para dados da barbearia
+  const [shop, setShop] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
+  // Estados para agendamento
   const [step, setStep] = useState(1)
   const [selectedService, setSelectedService] = useState<string | null>(null)
   const [selectedBarber, setSelectedBarber] = useState<string | null>(null)
@@ -210,6 +216,74 @@ export default function BarbershopBookingPage({
   const [selectedTime, setSelectedTime] = useState<string | null>(null)
   const [isConfirming, setIsConfirming] = useState(false)
   const [confirmed, setConfirmed] = useState(false)
+
+  // Buscar dados da barbearia da API
+  useEffect(() => {
+    async function fetchBarbershop() {
+      try {
+        console.log("🔄 Buscando dados da barbearia:", barbershopId)
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api"
+        const res = await fetch(`${apiUrl}/barbershops/${barbershopId}`)
+        
+        if (!res.ok) {
+          console.error("❌ Erro ao buscar barbearia:", res.status)
+          setError("Barbearia não encontrada")
+          setLoading(false)
+          return
+        }
+
+        const data = await res.json()
+        console.log("✅ Dados da barbearia:", data)
+        
+        // Extrair a barbearia da resposta
+        const barbershop = data?.barbershop || data
+        
+        if (!barbershop || !barbershop.id) {
+          setError("Dados inválidos da barbearia")
+          setLoading(false)
+          return
+        }
+
+        // Preparar dados para o componente
+        const shopData = {
+          id: barbershop.id,
+          name: barbershop.name,
+          image: "/placeholder.svg",
+          rating: barbershop.rating || 4.5,
+          reviews: 0,
+          address: barbershop.address || "Endereço não informado",
+          hours: "Seg-Sab, 9h-20h",
+          specialties: ["Cortes", "Barba"],
+          services: barbershop.services?.map((s: any) => ({
+            id: s.id,
+            name: s.name,
+            price: s.price || 0,
+            duration: `${s.duration} min` || "30 min",
+            icon: Scissors,
+            description: s.description
+          })) || defaultServices,
+          barbers: barbershop.barbers?.map((b: any) => ({
+            id: b.id,
+            name: b.name,
+            role: b.role || "Barbeiro",
+            image: "/placeholder.svg",
+            initials: b.name?.split(' ').map((n: string) => n[0]).join('').toUpperCase() || "B"
+          })) || [
+            { id: "1", name: "Barbeiro", role: "Profissional", image: "/placeholder.svg", initials: "B" }
+          ]
+        }
+
+        setShop(shopData)
+        setLoading(false)
+      } catch (err) {
+        console.error("❌ Erro ao buscar barbearia:", err)
+        setError("Erro ao carregar dados da barbearia")
+        setLoading(false)
+      }
+    }
+
+    fetchBarbershop()
+  }, [barbershopId])
 
   const days = getDaysOfWeek(weekOffset)
   const today = new Date()
@@ -220,14 +294,25 @@ export default function BarbershopBookingPage({
   const services = shop?.services ?? defaultServices
   const barbers = shop?.barbers ?? defaultBarbers
 
-  if (!shop) {
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center px-6">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Carregando dados da barbearia...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!shop || error) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center px-6">
         <div className="text-center">
           <h1 className="font-heading text-2xl font-bold text-foreground mb-2">Barbearia nao encontrada</h1>
           <p className="text-muted-foreground mb-6">A barbearia que voce procura nao existe ou foi removida.</p>
           <Button asChild className="bg-primary text-primary-foreground hover:bg-primary/90">
-            <Link href="/#barbearias">Ver Barbearias</Link>
+            <Link href="/agendar">Ver Barbearias</Link>
           </Button>
         </div>
       </div>
@@ -238,6 +323,13 @@ export default function BarbershopBookingPage({
     setIsConfirming(true)
     const appointmentDate = selectedDate ? selectedDate.toISOString().split('T')[0] : ""
     
+    console.log("📋 Criando agendamento:", {
+      barbershop_id: barbershopId,
+      service_id: selectedService,
+      appointment_date: appointmentDate,
+      appointment_time: selectedTime
+    });
+    
     schedulingAPI.createAppointment({
       barbershop_id: barbershopId,
       service_id: selectedService || "",
@@ -246,13 +338,16 @@ export default function BarbershopBookingPage({
     }).then((result) => {
       setIsConfirming(false)
       if (result.error) {
-        console.error("Erro ao agendar:", result.error)
+        console.error("❌ Erro ao agendar:", result.error)
+        alert(`Erro: ${result.error.message}`)
       } else {
+        console.log("✅ Agendamento criado com sucesso!");
         setConfirmed(true)
       }
     }).catch((error) => {
       setIsConfirming(false)
-      console.error("Erro ao agendar:", error)
+      console.error("❌ Erro catch ao agendar:", error)
+      alert(`Erro ao agendar: ${error}`)
     })
   }
 
@@ -266,8 +361,8 @@ export default function BarbershopBookingPage({
   }
 
   if (confirmed) {
-    const service = services.find((s) => s.id === selectedService)
-    const barber = barbers.find((b) => b.id === selectedBarber)
+    const service = services.find((s: any) => s.id === selectedService)
+    const barber = barbers.find((b: any) => b.id === selectedBarber)
     return (
       <div className="min-h-screen bg-background px-6 py-12">
         <div className="mx-auto max-w-lg flex flex-col items-center justify-center py-16 text-center">
@@ -408,7 +503,7 @@ export default function BarbershopBookingPage({
         {/* Step 1: Service */}
         {step === 1 && (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {services.map((service) => (
+            {services.map((service: typeof defaultServices[number]) => (
               <Card
                 key={service.id}
                 className={cn(
@@ -464,7 +559,7 @@ export default function BarbershopBookingPage({
         {step === 2 && (
           <div>
             <div className={cn("grid grid-cols-1 gap-4", barbers.length <= 3 ? "sm:grid-cols-3" : "sm:grid-cols-2")}>
-              {barbers.map((barber) => (
+              {barbers.map((barber: typeof defaultBarbers[number]) => (
                 <Card
                   key={barber.id}
                   className={cn(
@@ -615,13 +710,13 @@ export default function BarbershopBookingPage({
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Servico</span>
                       <span className="text-card-foreground font-medium">
-                        {services.find((s) => s.id === selectedService)?.name}
+                        {services.find((s: typeof defaultServices[number]) => s.id === selectedService)?.name}
                       </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Barbeiro</span>
                       <span className="text-card-foreground font-medium">
-                        {barbers.find((b) => b.id === selectedBarber)?.name}
+                        {barbers.find((b: typeof defaultBarbers[number]) => b.id === selectedBarber)?.name}
                       </span>
                     </div>
                     <div className="flex justify-between">
@@ -638,7 +733,7 @@ export default function BarbershopBookingPage({
                     <div className="flex justify-between pt-2 border-t border-border mt-1">
                       <span className="font-semibold text-card-foreground">Total</span>
                       <span className="text-lg font-bold text-primary">
-                        R$ {services.find((s) => s.id === selectedService)?.price}
+                        R$ {services.find((s: typeof defaultServices[number]) => s.id === selectedService)?.price}
                       </span>
                     </div>
                   </div>
