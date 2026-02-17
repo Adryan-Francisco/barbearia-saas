@@ -119,10 +119,18 @@ app.use(cors({
     }
     
     if (allowedOrigins.includes(origin)) {
+      console.log('[CORS] ✅ Allowed origin:', origin);
       callback(null, true);
     } else {
-      console.warn('[CORS] Blocked origin:', origin);
-      callback(new Error('CORS not allowed'));
+      console.warn('[CORS] ❌ Blocked origin:', origin);
+      console.warn('[CORS] Allowed origins:', allowedOrigins);
+      // Em produção, se for Vercel, permitir
+      if (origin && origin.includes('vercel.app')) {
+        console.warn('[CORS] ⚠️  Allowing Vercel origin:', origin);
+        callback(null, true);
+      } else {
+        callback(new Error('CORS not allowed'));
+      }
     }
   },
   credentials: true,
