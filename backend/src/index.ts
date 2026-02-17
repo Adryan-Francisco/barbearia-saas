@@ -81,7 +81,28 @@ const httpServer = createServer(app);
 const PORT = parseInt(process.env.PORT || '3001', 10);
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
 
+// Determinar origens permitidas
+const getAllowedOrigins = () => {
+  if (process.env.NODE_ENV === 'production') {
+    // Em produção, aceitar o FRONTEND_URL + URLs conhecidas
+    const origins = [
+      FRONTEND_URL,
+      'https://barberflow.vercel.app', // Vercel URL
+      'https://barbearia-saas-eol3.vercel.app', // Alternate Vercel URL
+    ];
+    // Se houver uma URL customizada, adicionar também
+    if (process.env.VERCEL_URL) {
+      origins.push(`https://${process.env.VERCEL_URL}`);
+    }
+    return origins;
+  } else {
+    // Em desenvolvimento, aceitar localhost em todas as portas
+    return ['http://localhost:3000', 'http://localhost:3002', 'http://localhost:3001', 'http://127.0.0.1:3000'];
+  }
+};
+
 console.log('[STARTUP] Express app initialized');
+console.log('[STARTUP] CORS origins:', getAllowedOrigins());
 
 // Basic security middleware (no dependencies)
 app.use(helmet());
@@ -89,9 +110,21 @@ app.use(compression());
 
 // CORS
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' 
-    ? [FRONTEND_URL] 
-    : ['http://localhost:3000', 'http://localhost:3002', 'http://localhost:3001'],
+  origin: (origin, callback) => {
+    const allowedOrigins = getAllowedOrigins();
+    
+    // Para requisições sem origin (como mobile apps ou requests sem header)
+    if (!origin) {
+      return callback(null, true);
+    }
+    
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      console.warn('[CORS] Blocked origin:', origin);
+      callback(new Error('CORS not allowed'));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
