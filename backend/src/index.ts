@@ -4,8 +4,17 @@ import helmet from 'helmet';
 import compression from 'compression';
 import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
+
+console.log('✅ Starting BarberFlow Backend...');console.log('✅ Module imports starting...');
+
+dotenv.config();
+
+console.log('✅ Dotenv loaded');
+console.log('📋 Environment:', process.env.NODE_ENV);
+console.log('🔌 Database URL:', process.env.DATABASE_URL ? 'SET' : 'NOT SET');
+console.log('🔐 JWT Secret:', process.env.JWT_SECRET ? 'SET' : 'NOT SET');
+
 import { createServer } from 'http';
-import { websocketService } from './services/websocketService';
 import { cacheMiddleware } from './utils/cache';
 import { paginationMiddleware } from './utils/pagination';
 import authRoutes from './routes/authRoutes';
@@ -21,12 +30,7 @@ import cancellationRoutes from './routes/cancellationRoutes';
 import versionRoutes from './routes/versionRoutes';
 import { errorHandler } from './middleware/errorHandler';
 
-dotenv.config();
-
-console.log('✅ Starting BarberFlow Backend...');
-console.log('📋 Environment:', process.env.NODE_ENV);
-console.log('🔌 Database URL:', process.env.DATABASE_URL ? 'SET' : 'NOT SET');
-console.log('🔐 JWT Secret:', process.env.JWT_SECRET ? 'SET' : 'NOT SET');
+console.log('✅ All imports completed');
 
 const app = express();
 const httpServer = createServer(app);
