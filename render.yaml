@@ -1,0 +1,42 @@
+services:
+  - type: web
+    name: barbearia-saas-backend
+    runtime: node
+    plan: free
+    buildCommand: cd backend && npm install && npm run build
+    startCommand: cd backend && node dist/index.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: barbearia-db
+          property: connectionString
+      - key: JWT_SECRET
+        sync: false
+      - key: WHATSAPP_API_TOKEN
+        sync: false
+      - key: PORT
+        value: "3001"
+
+  - type: web
+    name: barbearia-saas-frontend
+    runtime: node
+    plan: free
+    buildCommand: cd frontend && npm install && npm run build
+    startCommand: cd frontend && npm run start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NEXT_PUBLIC_API_URL
+        value: https://barbearia-saas-h7lv.onrender.com/api
+      - key: NEXT_PUBLIC_WS_URL
+        value: https://barbearia-saas-h7lv.onrender.com
+
+databases:
+  - name: barbearia-db
+    databaseName: barbearia
+    user: postgres
+    plan: free
+    region: ohio
+    postgresMajorVersion: "15"
