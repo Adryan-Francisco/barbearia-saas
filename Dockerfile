@@ -33,8 +33,8 @@ ENV BUILD_DATE=${BUILD_DATE}
 # Copy package files
 COPY backend/package*.json ./
 
-# Install production dependencies only
-RUN npm install --only=production
+# Install all dependencies (including devDependencies for ts-node seed)
+RUN npm install
 
 # Copy built app from builder
 COPY --from=builder /app/dist ./dist
