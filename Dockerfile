@@ -52,5 +52,5 @@ RUN npx prisma generate
 EXPOSE 3000
 
 # Start app directly - with unbuffered output
-# Run migrations before starting
-CMD ["sh", "-c", "npx prisma migrate deploy && node --unhandled-rejections=strict --trace-warnings dist/index.js"]
+# Run migrations and seed before starting
+CMD ["sh", "-c", "npx prisma migrate deploy && npx prisma db seed && node --unhandled-rejections=strict --trace-warnings dist/index.js"]
