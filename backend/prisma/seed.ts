@@ -1,4 +1,6 @@
-import { prisma } from '../src/utils/prisma';
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
 
 async function main() {
   console.log('🌱 Iniciando seed do banco de dados...');
