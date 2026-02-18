@@ -26,55 +26,25 @@ import { createServer } from 'http';
 
 console.log('[STARTUP] Express imports loaded');
 
-// Lazy load middleware
-let cacheMiddleware: any;
-let paginationMiddleware: any;
-let errorHandler: any;
+// Import middleware synchronously
+import { cacheMiddleware } from './utils/cache';
+import { paginationMiddleware } from './utils/pagination';
+import { errorHandler } from './middleware/errorHandler';
 
-const loadMiddleware = async () => {
-  console.log('[STARTUP] Loading middleware...');
-  const cache = await import('./utils/cache');
-  const pagination = await import('./utils/pagination');
-  const errors = await import('./middleware/errorHandler');
-  
-  cacheMiddleware = cache.cacheMiddleware;
-  paginationMiddleware = pagination.paginationMiddleware;
-  errorHandler = errors.errorHandler;
-  
-  console.log('[STARTUP] Middleware loaded successfully');
-};
+// Import routes synchronously - CommonJS compatible
+import authRoutes from './routes/authRoutes';
+import schedulingRoutes from './routes/schedulingRoutes';
+import barbershopRoutes from './routes/barbershopRoutes';
+import serviceRoutes from './routes/serviceRoutes';
+import reviewRoutes from './routes/reviewRoutes';
+import analyticsRoutes from './routes/analyticsRoutes';
+import paymentRoutes from './routes/paymentRoutes';
+import stripeRoutes from './routes/stripeRoutes';
+import favoritesRoutes from './routes/favoritesRoutes';
+import cancellationRoutes from './routes/cancellationRoutes';
+import versionRoutes from './routes/versionRoutes';
 
-// Lazy load routes
-const loadRoutes = async () => {
-  console.log('[STARTUP] Loading routes...');
-  const auth = await import('./routes/authRoutes');
-  const scheduling = await import('./routes/schedulingRoutes');
-  const barbershop = await import('./routes/barbershopRoutes');
-  const service = await import('./routes/serviceRoutes');
-  const review = await import('./routes/reviewRoutes');
-  const analytics = await import('./routes/analyticsRoutes');
-  const payment = await import('./routes/paymentRoutes');
-  const stripe = await import('./routes/stripeRoutes');
-  const favorites = await import('./routes/favoritesRoutes');
-  const cancellation = await import('./routes/cancellationRoutes');
-  const version = await import('./routes/versionRoutes');
-  
-  console.log('[STARTUP] Routes loaded successfully');
-  
-  return {
-    authRoutes: auth.default || auth,
-    schedulingRoutes: scheduling.default || scheduling,
-    barbershopRoutes: barbershop.default || barbershop,
-    serviceRoutes: service.default || service,
-    reviewRoutes: review.default || review,
-    analyticsRoutes: analytics.default || analytics,
-    paymentRoutes: payment.default || payment,
-    stripeRoutes: stripe.default || stripe,
-    favoritesRoutes: favorites.default || favorites,
-    cancellationRoutes: cancellation.default || cancellation,
-    versionRoutes: version.default || version,
-  };
-};
+console.log('[STARTUP] All middleware and routes imported successfully');
 
 const app = express();
 const httpServer = createServer(app);
@@ -173,64 +143,45 @@ app.get('/api/health', (req, res) => {
 
 console.log('[STARTUP] Health check route registered');
 
-// Initialize and start server
-const startServer = async () => {
-  try {
-    console.log('[STARTUP] Loading application middleware and routes...');
-    
-    // Load middleware
-    await loadMiddleware();
-    
-    // Apply loaded middleware
-    if (paginationMiddleware) app.use(paginationMiddleware);
-    if (cacheMiddleware) app.use(cacheMiddleware(5 * 60 * 1000));
-    
-    console.log('[STARTUP] Middleware applied');
-    
-    // Load and register routes
-    const routes = await loadRoutes();
-    
-    app.use('/api/auth', routes.authRoutes);
-    app.use('/api/scheduling', routes.schedulingRoutes);
-    app.use('/api/barbershops', routes.barbershopRoutes);
-    app.use('/api/barbershops', routes.serviceRoutes);
-    app.use('/api/reviews', routes.reviewRoutes);
-    app.use('/api/analytics', routes.analyticsRoutes);
-    app.use('/api/payments', routes.paymentRoutes);
-    app.use('/api/stripe', routes.stripeRoutes);
-    app.use('/api/favorites', routes.favoritesRoutes);
-    app.use('/api/cancellations', routes.cancellationRoutes);
-    app.use('/api/version', routes.versionRoutes);
-    
-    console.log('[STARTUP] All routes registered');
-    
-    // Error handler
-    if (errorHandler) app.use(errorHandler);
-    
-    console.log('[STARTUP] Error handler applied');
-    
-    // Start listening
-    console.log(`[STARTUP] Starting server on 0.0.0.0:${PORT}`);
-    
-    return new Promise<void>((resolve, reject) => {
-      httpServer.listen(PORT, '0.0.0.0', () => {
-        console.log(`[SUCCESS] ✅ Server LIVE on port ${PORT}`);
-        console.log(`[SUCCESS] ✅ WebSocket ready on ws://0.0.0.0:${PORT}`);
-        resolve();
-      });
+// Register routes directly
+console.log('[STARTUP] Registering API routes...');
+app.use('/api/auth', authRoutes);
+app.use('/api/scheduling', schedulingRoutes);
+app.use('/api/barbershops', barbershopRoutes);
+app.use('/api/barbershops', serviceRoutes);
+app.use('/api/reviews', reviewRoutes);
+app.use('/api/analytics', analyticsRoutes);
+app.use('/api/payments', paymentRoutes);
+app.use('/api/stripe', stripeRoutes);
+app.use('/api/favorites', favoritesRoutes);
+app.use('/api/cancellations', cancellationRoutes);
+app.use('/api/version', versionRoutes);
 
-      httpServer.on('error', (error: any) => {
-        console.error('[ERROR] HTTP Server Error:', error.message);
-        reject(error);
-      });
-    });
-    
-  } catch (error) {
-    console.error('[ERROR] Server startup failed:', error instanceof Error ? error.message : error);
-    console.error('[ERROR] Stack:', (error as any)?.stack);
-    process.exit(1);
-  }
-};
+console.log('[STARTUP] All routes registered successfully');
+
+// Apply pagination and cache middleware
+if (paginationMiddleware) app.use(paginationMiddleware);
+if (cacheMiddleware) app.use(cacheMiddleware(5 * 60 * 1000));
+
+// Apply error handler
+app.use(errorHandler);
+
+console.log('[STARTUP] Error handler applied');
+
+// Start server
+console.log(`[STARTUP] Starting server on 0.0.0.0:${PORT}`);
+
+httpServer.listen(PORT, '0.0.0.0', () => {
+  console.log(`✅ [SUCCESS] Server running on port ${PORT}`);
+  console.log(`✅ [SUCCESS] WebSocket ready on ws://0.0.0.0:${PORT}`);
+  console.log(`[INFO] Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`[INFO] Database: ${process.env.DATABASE_URL ? 'Connected' : 'Not configured'}`);
+});
+
+httpServer.on('error', (error: any) => {
+  console.error('[ERROR] HTTP Server Error:', error.message);
+  process.exit(1);
+});
 
 // Handle process signals
 process.on('SIGTERM', () => {
@@ -261,9 +212,4 @@ process.on('unhandledRejection', (reason, promise) => {
   process.exit(1);
 });
 
-// Start the server
-console.log('[STARTUP] Initializing BarberFlow Backend...');
-startServer().catch((error) => {
-  console.error('[FATAL] Failed to start server:', error instanceof Error ? error.message : error);
-  process.exit(1);
-});
+console.log('[STARTUP] ✅ BarberFlow Backend initialized successfully');
