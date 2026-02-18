@@ -1,14 +1,11 @@
 // Log MUITO cedo - antes de qualquer importação ou operação
-// Using stderr because it's always unbuffered
-process.stderr.write('\n[PRE-STARTUP-STDERR] Process started at ' + new Date().toISOString() + '\n');
-process.stderr.write('[PRE-STARTUP-STDERR] Node version: ' + process.version + '\n');
-process.stderr.write('[PRE-STARTUP-STDERR] Working directory: ' + process.cwd() + '\n');
-process.stderr.write('[PRE-STARTUP-STDERR] NODE_ENV: ' + (process.env.NODE_ENV || 'undefined') + '\n');
+process.stderr.write('\n[PRE-STARTUP] Process started at ' + new Date().toISOString() + '\n');
+process.stderr.write('[PRE-STARTUP] Node version: ' + process.version + '\n');
+process.stderr.write('[PRE-STARTUP] Working directory: ' + process.cwd() + '\n');
 
 console.error('[PRE-STARTUP] Process started at', new Date().toISOString());
 console.error('[PRE-STARTUP] Node version:', process.version);
 console.error('[PRE-STARTUP] Working directory:', process.cwd());
-console.error('[PRE-STARTUP] NODE_ENV:', process.env.NODE_ENV);
 
 import dotenv from 'dotenv';
 dotenv.config();
@@ -31,7 +28,7 @@ import { cacheMiddleware } from './utils/cache';
 import { paginationMiddleware } from './utils/pagination';
 import { errorHandler } from './middleware/errorHandler';
 
-// Import routes synchronously - CommonJS compatible
+// Import routes synchronously
 import authRoutes from './routes/authRoutes';
 import schedulingRoutes from './routes/schedulingRoutes';
 import barbershopRoutes from './routes/barbershopRoutes';
@@ -54,19 +51,16 @@ const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
 // Determinar origens permitidas
 const getAllowedOrigins = () => {
   if (process.env.NODE_ENV === 'production') {
-    // Em produção, aceitar o FRONTEND_URL + URLs conhecidas
     const origins = [
       FRONTEND_URL,
-      'https://barberflow.vercel.app', // Vercel URL
-      'https://barbearia-saas-eol3.vercel.app', // Alternate Vercel URL
+      'https://barberflow.vercel.app',
+      'https://barbearia-saas-eol3.vercel.app',
     ];
-    // Se houver uma URL customizada, adicionar também
     if (process.env.VERCEL_URL) {
       origins.push(`https://${process.env.VERCEL_URL}`);
     }
     return origins;
   } else {
-    // Em desenvolvimento, aceitar localhost em todas as portas
     return ['http://localhost:3000', 'http://localhost:3002', 'http://localhost:3001', 'http://127.0.0.1:3000'];
   }
 };
@@ -74,7 +68,7 @@ const getAllowedOrigins = () => {
 console.log('[STARTUP] Express app initialized');
 console.log('[STARTUP] CORS origins:', getAllowedOrigins());
 
-// Basic security middleware (no dependencies)
+// Basic security middleware
 app.use(helmet());
 app.use(compression());
 
@@ -83,20 +77,17 @@ app.use(cors({
   origin: (origin, callback) => {
     const allowedOrigins = getAllowedOrigins();
     
-    // Para requisições sem origin (como mobile apps ou requests sem header)
     if (!origin) {
       return callback(null, true);
     }
     
     if (allowedOrigins.includes(origin)) {
-      console.log('[CORS] ✅ Allowed origin:', origin);
+      console.log('[CORS] Allowed origin:', origin);
       callback(null, true);
     } else {
-      console.warn('[CORS] ❌ Blocked origin:', origin);
-      console.warn('[CORS] Allowed origins:', allowedOrigins);
-      // Em produção, se for Vercel, permitir
+      console.warn('[CORS] Blocked origin:', origin);
       if (origin && origin.includes('vercel.app')) {
-        console.warn('[CORS] ⚠️  Allowing Vercel origin:', origin);
+        console.warn('[CORS] Allowing Vercel origin:', origin);
         callback(null, true);
       } else {
         callback(new Error('CORS not allowed'));
@@ -132,7 +123,7 @@ app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
 console.log('[STARTUP] Basic middleware configured');
 
-// Health check - MINIMAL (no database)
+// Health check endpoint
 app.get('/api/health', (req, res) => {
   res.json({ 
     status: 'ok', 
@@ -143,7 +134,7 @@ app.get('/api/health', (req, res) => {
 
 console.log('[STARTUP] Health check route registered');
 
-// Register routes directly
+// Register all API routes
 console.log('[STARTUP] Registering API routes...');
 app.use('/api/auth', authRoutes);
 app.use('/api/scheduling', schedulingRoutes);
@@ -159,7 +150,7 @@ app.use('/api/version', versionRoutes);
 
 console.log('[STARTUP] All routes registered successfully');
 
-// Apply pagination and cache middleware
+// Apply additional middleware
 if (paginationMiddleware) app.use(paginationMiddleware);
 if (cacheMiddleware) app.use(cacheMiddleware(5 * 60 * 1000));
 
@@ -172,10 +163,10 @@ console.log('[STARTUP] Error handler applied');
 console.log(`[STARTUP] Starting server on 0.0.0.0:${PORT}`);
 
 httpServer.listen(PORT, '0.0.0.0', () => {
-  console.log(`✅ [SUCCESS] Server running on port ${PORT}`);
-  console.log(`✅ [SUCCESS] WebSocket ready on ws://0.0.0.0:${PORT}`);
-  console.log(`[INFO] Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`[INFO] Database: ${process.env.DATABASE_URL ? 'Connected' : 'Not configured'}`);
+  console.log(`SUCCESS: Server running on port ${PORT}`);
+  console.log(`SUCCESS: WebSocket ready on ws://0.0.0.0:${PORT}`);
+  console.log(`INFO: Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`INFO: Database: ${process.env.DATABASE_URL ? 'Connected' : 'Not configured'}`);
 });
 
 httpServer.on('error', (error: any) => {
@@ -212,4 +203,4 @@ process.on('unhandledRejection', (reason, promise) => {
   process.exit(1);
 });
 
-console.log('[STARTUP] ✅ BarberFlow Backend initialized successfully');
+console.log('[STARTUP] BarberFlow Backend initialized successfully');
