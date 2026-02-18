@@ -34,7 +34,7 @@ export function LandingHero() {
 
           {/* Heading */}
           <h1 className="font-heading text-4xl sm:text-5xl lg:text-6xl font-bold text-foreground leading-tight text-balance">
-            Encontre a barbearia perfeita para voce
+            Encontre a barbearia perfeita para você
           </h1>
 
           <p className="mt-5 text-lg text-muted-foreground leading-relaxed">
@@ -60,7 +60,7 @@ export function LandingHero() {
             </div>
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <MapPin className="w-4 h-4 text-primary" />
-              <span>Barbearias em toda ão Paulo</span>
+              <span>Barbearias em toda São Paulo</span>
             </div>
           </div>
         </div>

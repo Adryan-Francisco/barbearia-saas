@@ -33,7 +33,7 @@ async function main() {
     // Barbeiro/Dono de barbearia
     const barbershopOwner = await prisma.user.create({
       data: {
-        name: 'Carlos Barbeiro',
+        name: 'Jose Jacomassi',
         phone: '11987654322',
         email: 'barbeiro@test.com',
         password: '$2a$10$ogcg.6N1RVh4S/sCuRScveO/mkdlAr4HzvrusV3DXmoURaWswQuGS', // senha: 123456
