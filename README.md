@@ -1,407 +1,464 @@
 <div align="center">
 
 # ✂️ BarberFlow SaaS
-## A Plataforma Completa para Gestão de Barbearias
 
-[![Next.js](https://img.shields.io/badge/Next.js-16+-black?style=flat-square)](https://nextjs.org/)
-[![React](https://img.shields.io/badge/React-19-61dafb?style=flat-square)](https://react.dev/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.7+-3178c6?style=flat-square)](https://www.typescriptlang.org/)
-[![Node.js](https://img.shields.io/badge/Node.js-18+-339933?style=flat-square)](https://nodejs.org/)
-[![Express](https://img.shields.io/badge/Express-4.18+-000000?style=flat-square)](https://expressjs.com/)
-[![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
+### A Plataforma Completa de Gestão para Barbearias
 
-> Solução SaaS moderna para agendamento online, painel de gerenciamento e dashboard personalizado
+[![Next.js](https://img.shields.io/badge/Next.js-16+-black?style=for-the-badge&logo=nextdotjs)](https://nextjs.org/)
+[![React](https://img.shields.io/badge/React-19-61dafb?style=for-the-badge&logo=react)](https://react.dev/)
+[![Node.js](https://img.shields.io/badge/Node.js-18+-339933?style=for-the-badge&logo=nodedotjs)](https://nodejs.org/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15+-336791?style=for-the-badge&logo=postgresql)](https://www.postgresql.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.7+-3178c6?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org/)
+[![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE)
+
+**[🌐 Visite o Site](#) • [📖 Documentação](#estrutura-do-projeto) • [🚀 Deploy Rápido](#-deploy)**
+
+---
+
+Solução SaaS profissional para agendamento online, painel de gerenciamento inteligente e dashboard em tempo real com a melhor experiência do usuário.
 
 </div>
 
 ---
 
-## 🚀 Visão Geral
+## 🎯 Por que BarberFlow?
 
-O **BarberFlow** é uma plataforma completa e profissional para gestão de barbearias. Com integração total entre frontend e backend, oferece:
-
-- 📱 **Interface Moderna**: Design responsivo com Next.js 16 e Tailwind CSS
-- 🔐 **Segurança**: Autenticação JWT com tokens seguros
-- 📅 **Agendamentos**: Sistema robusto de marcação de horários
-- 📊 **Dashboard**: Painel de controle para barbeiros com analytics
-- ⚡ **Tempo Real**: WebSocket para notificações instantâneas
-- 🎨 **UI Premium**: Componentes shadcn/ui com dark mode
+| Fácil de Usar | Agendamentos | Analytics | Seguro |
+|:---:|:---:|:---:|:---:|
+| 🔧 Interface intuitiva para clientes e barbeiros | 📅 Sistema robusto com validações inteligentes | 📊 Dashboard com insights em tempo real | 🔒 Autenticação JWT e dados criptografados |
 
 ---
 
 ## ✨ Funcionalidades Principais
 
-<table>
-  <tr>
-    <td align="center">
-      <h4>👥 Multi-User</h4>
-      <p>Clientes e Barbeiros<br/>com perfis independentes</p>
-    </td>
-    <td align="center">
-      <h4>📅 Agendamentos</h4>
-      <p>Sistema inteligente de<br/>marcação com validações</p>
-    </td>
-    <td align="center">
-      <h4>📊 Analytics</h4>
-      <p>Relatórios e gráficos<br/>em tempo real</p>
-    </td>
-  </tr>
-  <tr>
-    <td align="center">
-      <h4>💬 WhatsApp</h4>
-      <p>Integração com<br/>WhatsApp Business API</p>
-    </td>
-    <td align="center">
-      <h4>💳 Pagamentos</h4>
-      <p>Integração Stripe<br/>para cobranças</p>
-    </td>
-    <td align="center">
-      <h4>⚙️ Configurável</h4>
-      <p>Gerenciamento completo<br/>de horários e serviços</p>
-    </td>
-  </tr>
-</table>
+### 👥 **Multi-User Sistema**
+- Autenticação separada para clientes e barbeiros
+- Perfis independentes com dados isolados
+- Controle de acesso baseado em roles
+
+### 📅 **Sistema Inteligente de Agendamentos**
+- Marcação em tempo real com disponibilidade
+- Confirmação automática e cancelamento com 1h de antecedência
+- Notificações via WhatsApp (integração)
+- Validações de conflito de horário
+
+### 📊 **Dashboard Avançado**
+- Gráficos de receita e agendamentos
+- Análise de clientes mais frequentes
+- Relatórios customizáveis
+- Estatísticas em tempo real
+
+### 💬 **Comunicação Integrada**
+- WhatsApp Business API (envio de lembretes)
+- Notificações push em tempo real
+- Sistema de mensagens (em breve)
+
+### 💳 **Pagamentos Online**
+- Integração Stripe para cobranças
+- Suporte a múltiplos métodos de pagamento
+- Histórico de transações
+
+### 📱 **PWA (Progressive Web App)**
+- Funciona offline
+- Instale como app nativa em qualquer dispositivo
+- Sincronização automática de dados
 
 ---
 
 ## 🏗️ Stack Tecnológico
 
-<table>
-  <tr>
-    <td align="center" width="50%">
-      <h3>🎨 Frontend</h3>
-      <ul align="left">
-        <li>Next.js 16+ (App Router)</li>
-        <li>React 19</li>
-        <li>TypeScript 5.7+</li>
-        <li>Tailwind CSS 3</li>
-        <li>shadcn/ui Components</li>
-        <li>Recharts para Gráficos</li>
-      </ul>
-    </td>
-    <td align="center" width="50%">
-      <h3>🔧 Backend</h3>
-      <ul align="left">
-        <li>Node.js 18+</li>
-        <li>Express 4.18+</li>
-        <li>TypeScript 5.7+</li>
-        <li>Prisma ORM</li>
-        <li>PostgreSQL</li>
-        <li>JWT Authentication</li>
-      </ul>
-    </td>
-  </tr>
-</table>
+### Frontend
+```
+Next.js 16+ (App Router) + React 19 + TypeScript 5.7+
+├── Tailwind CSS 3 - Estilização
+├── shadcn/ui - Componentes premium
+├── Recharts - Gráficos interativos
+├── Socket.io - Comunicação em tempo real
+└── jwt-decode - Autenticação
+```
+
+### Backend
+```
+Node.js 18+ + Express 4.18+ + TypeScript 5.7+
+├── Prisma ORM - Banco de dados
+├── PostgreSQL 15+ - Banco relacional
+├── JWT - Autenticação segura
+├── bcryptjs - Criptografia
+└── Stripe SDK - Pagamentos
+```
+
+### DevOps & Deploy
+```
+├── Vercel - Frontend (recomendado)
+├── Render.com - Backend (gratuito)
+├── GitHub Actions - CI/CD
+└── PostgreSQL Cloud - Banco de dados
+```
 
 ---
 
-## � Guia de Início Rápido
+## 🚀 Início Rápido
 
-### 1️⃣ Clonar o Repositório
+### 1️⃣ Clone o Repositório
 
 ```bash
 git clone https://github.com/Adryan-Francisco/barbearia-saas.git
 cd barbearia-saas
 ```
 
-### 2️⃣ Backend Setup
+### 2️⃣ Configure o Backend
 
 ```bash
 cd backend
 npm install --legacy-peer-deps
 ```
 
-**Criar arquivo `.env`:**
+**Crie `.env` na pasta `backend/`:**
 ```env
+# Servidor
 PORT=3001
+NODE_ENV=development
+
+# Banco de Dados
 DATABASE_URL="postgresql://user:password@localhost:5432/barbearia"
-JWT_SECRET=sua_senha_secreta_super_segura
+
+# Autenticação
+JWT_SECRET=sua_chave_super_segura_aqui
+
+# Frontend
 FRONTEND_URL=http://localhost:3000
+
+# Integrações (opcional)
+WHATSAPP_API_TOKEN=seu_token
+STRIPE_SECRET_KEY=seu_stripe_key
 ```
 
-**Iniciar servidor:**
+**Execute as migrações e inicie:**
 ```bash
-npm run dev          # Desenvolvimento
-npm run build       # Build para produção
-npm run seed        # Popular banco com dados
+npx prisma migrate dev          # Cria as tabelas
+npm run seed                    # Popula com dados de teste
+npm run dev                     # Inicia em desenvolvimento
 ```
 
-✅ API rodando em: **http://localhost:3001**
+✅ Backend rodando em: **http://localhost:3001/api/health**
 
-### 3️⃣ Frontend Setup
+### 3️⃣ Configure o Frontend
 
 ```bash
 cd ../frontend
 npm install --legacy-peer-deps
 ```
 
-**Criar arquivo `.env.local`:**
+**Crie `.env.local` na pasta `frontend/`:**
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:3001/api
 NEXT_PUBLIC_WS_URL=http://localhost:3001
 ```
 
-**Iniciar dev server:**
+**Inicie o servidor de desenvolvimento:**
 ```bash
-npm run dev          # Desenvolvimento na porta 3000
-npm run build       # Build para produção
-npm run lint        # Verificar erros
+npm run dev
 ```
+
+✅ Frontend rodando em: **http://localhost:3000**
 
 ---
 
-## 📱 Progressive Web App (PWA)
-
-O BarberFlow é uma **PWA** - pode ser instalada como app nativo em qualquer dispositivo!
-
-### ⚡ Funcionalidades PWA:
-
-- ✅ **Offline First**: Funciona sem conexão de internet
-- ✅ **Installable**: Instale como app nativa (Android, iOS, Windows, Mac)
-- ✅ **Fast**: Carregamento rápido com cache inteligente
-- ✅ **Responsive**: Se adapta a qualquer tamanho de tela
-- ✅ **Push Notifications**: Notificações em tempo real (em breve)
-
-### 🎯 Como Instalar:
-
-#### Desktop (Chrome/Edge):
-1. Abra http://localhost:3000
-2. Procure pelo ícone "Instalar" na barra de endereço
-3. Clique e siga as instruções
-
-#### Mobile:
-1. Abra em navegador mobile
-2. Toque no menu (⋮ ou Share)
-3. Procure por "Adicionar à Tela Inicial" ou "Instalar App"
-4. Confirme a instalação
-
-### 🎨 Configurar Ícones PWA:
-
-**1. Instale `sharp` para geração automática:**
-```bash
-cd frontend
-npm install --save-dev sharp
-```
-
-**2. Prepare uma imagem 512x512px chamada `icon-source.png` em `frontend/public/`**
-
-**3. Execute o script de geração:**
-```bash
-node generate-pwa-icons.js
-```
-
-Os ícones serão criados automaticamente em `frontend/public/icons/`
-
-> **Alternativa online**: Usar [PWA Asset Generator](https://pwa-asset-generator.netlify.app/) ou [RealFaviconGenerator](https://realfavicongenerator.net/)
-
-### 🧪 Verificar Service Worker:
-
-1. Abra DevTools (F12)
-2. Vá em **Application** → **Service Workers**
-3. Deve aparecer `service-worker.js` com status **activated**
-
-### 📋 Arquivos PWA:
-
-- `public/manifest.json` - Metadados da app
-- `public/service-worker.js` - Cache offline
-- `public/offline.html` - Página offline
-- `hooks/use-pwa.tsx` - Hook para gerenciar PWA
-- `components/pwa-install-button.tsx` - Botão de instalação
-- `components/pwa-diagnostics.tsx` - Diagnóstico PWA
-
-### 📖 Mais Detalhes:
-
-Veja [PWA_SETUP.md](./frontend/PWA_SETUP.md) para guia completo de configuração e testes.
-
----✅ Acesse em: **http://localhost:3000**
-
----
-
-## 📁 Estrutura do Projeto
+## 📚 Estrutura do Projeto
 
 ```
 barbearia-saas/
-│
 ├── 📂 backend/
 │   ├── src/
-│   │   ├── controllers/        # Lógica das rotas
-│   │   ├── services/           # Regras de negócio
-│   │   ├── routes/             # Endpoints da API
-│   │   ├── middleware/         # Auth, Error Handling
-│   │   └── utils/              # JWT, Hash, Database
+│   │   ├── controllers/        ← Lógica das rotas
+│   │   ├── services/           ← Regras de negócio
+│   │   ├── routes/             ← Endpoints da API
+│   │   ├── middleware/         ← Auth, validação, errors
+│   │   └── utils/              ← JWT, hash, database
 │   ├── prisma/
-│   │   └── schema.prisma       # Schema do banco
+│   │   ├── schema.prisma       ← Modelo do banco
+│   │   ├── seed.ts             ← Dados iniciais
+│   │   └── migrations/         ← Histórico de mudanças
 │   └── package.json
 │
 └── 📂 frontend/
     ├── app/
-    │   ├── page.tsx            # Landing Page
-    │   ├── entrar/             # Login (Cliente/Barbeiro)
-    │   ├── cadastro/           # Registro (Cliente/Barbeiro)
-    │   ├── cliente/            # Dashboard Cliente
-    │   ├── dashboard/          # Painel Barbeiro
-    │   └── agendar/            # Sistema de Agendamento
+    │   ├── layout.tsx          ← Layout global
+    │   ├── page.tsx            ← Home / Landing
+    │   ├── entrar/             ← Páginas de login
+    │   ├── cadastro/           ← Páginas de registro
+    │   ├── agendar/            ← Sistema de agendamento
+    │   ├── cliente/            ← Painel do cliente
+    │   └── dashboard/          ← Painel do barbeiro
     ├── components/
-    │   ├── dashboard/          # Componentes do painel
-    │   ├── landing/            # Seções da homepage
-    │   └── ui/                 # shadcn/ui Components
+    │   ├── dashboard/          ← Componentes do painel
+    │   ├── ui/                 ← shadcn/ui components
+    │   └── app-*.tsx           ← Layout components
+    ├── hooks/
+    │   ├── use-pwa.tsx         ← PWA management
+    │   └── use-user-role.tsx   ← Role verification
     ├── lib/
-    │   ├── api.ts              # Cliente HTTP centralizado
-    │   └── utils.ts            # Utilitários
-    └── package.json
+    │   ├── api.ts              ← API client centralizado
+    │   ├── useApi.ts           ← Custom hooks
+    │   └── utils.ts            ← Utilitários
+    └── public/
+        ├── manifest.json       ← PWA manifest
+        ├── service-worker.js   ← Cache offline
+        └── icons/              ← App icons
 ```
 
 ---
 
-## 🔌 API Endpoints
+## 🌐 API Endpoints
 
-### 🔐 Autenticação
-- `POST /api/auth/register` - Registrar novo cliente
-- `POST /api/auth/login` - Fazer login
-- `POST /api/auth/barbershop-register` - Registrar barbearia
-- `POST /api/auth/barbershop-login` - Login barbeiro
-- `GET /api/auth/me` - Dados do usuário autenticado
+### 🔐 **Autenticação**
+```
+POST   /api/auth/register              ➜ Registrar cliente
+POST   /api/auth/login                 ➜ Login cliente
+POST   /api/auth/barbershop-register   ➜ Registrar barbeiro
+POST   /api/auth/barbershop-login      ➜ Login barbeiro
+POST   /api/auth/logout                ➜ Logout
+GET    /api/auth/me                    ➜ Dados do usuário
+```
 
-### 📅 Agendamentos
-- `POST /api/scheduling/appointments` - Criar agendamento ✨
-- `GET /api/barbershops/{id}/appointments` - Listar agendamentos
-- `DELETE /api/scheduling/{id}` - Cancelar agendamento
+### 📅 **Agendamentos**
+```
+POST   /api/scheduling/appointments              ➜ Criar agendamento ⭐
+GET    /api/scheduling/appointments              ➜ Listar agendamentos
+PUT    /api/scheduling/appointments/:id          ➜ Atualizar
+DELETE /api/scheduling/appointments/:id          ➜ Cancelar
+GET    /api/barbershops/:id/appointments         ➜ Por barbearia
+GET    /api/barbershops/:id/appointments/:date   ➜ Por data
+```
 
-### 🏪 Barbearias
-- `GET /api/barbershops/me` - Dados da minha barbearia
-- `GET /api/barbershops/{id}` - Detalhes de uma barbearia
-- `PUT /api/barbershops/{id}` - Atualizar informações
-- `GET /api/barbershops/{id}/services` - Listar serviços
+### 🏪 **Barbearias**
+```
+GET    /api/barbershops                ➜ Todas as barbearias
+GET    /api/barbershops/me             ➜ Minha barbearia
+GET    /api/barbershops/:id            ➜ Detalhes
+PUT    /api/barbershops/:id            ➜ Atualizar
+POST   /api/barbershops/:id/services   ➜ Adicionar serviço
+GET    /api/barbershops/:id/services   ➜ Listar serviços
+```
 
-### ⭐ Avaliações
-- `POST /api/reviews` - Criar review
-- `GET /api/reviews/shops/{id}` - Reviews de uma barbearia
+### ⭐ **Avaliações**
+```
+POST   /api/reviews                 ➜ Criar review
+GET    /api/reviews/:barbershop_id  ➜ Reviews de uma barbearia
+DELETE /api/reviews/:id             ➜ Deletar review
+```
+
+### 📊 **Analytics**
+```
+GET    /api/analytics/:barbershop_id/stats           ➜ Estatísticas
+GET    /api/analytics/:barbershop_id/clients         ➜ Top clientes
+GET    /api/analytics/:barbershop_id/daily-trend     ➜ Tendência diária
+GET    /api/analytics/:barbershop_id/hourly-metrics  ➜ Métricas por hora
+```
 
 ---
 
-## 📊 Dashboard Features
+## 👥 Contas de Teste
 
-### Para Barbeiros 💇‍♂️
-- ✅ **Agendamentos do Dia**: Visualize todos os agendamentos programados
-- ✅ **Clientes**: Gerencie clientes e histórico de atendimentos
-- ✅ **Serviços**: Configure catálogo de serviços e preços
-- ✅ **Relatórios**: Análise de receita, agendamentos e clientes
-- ✅ **Configurações**: Horários de funcionamento e dados da barbearia
+Após rodar `npm run seed`, use estas credenciais:
 
-### Para Clientes 👥
-- ✅ **Agendamentos**: Marque horários com barbeiros
-- ✅ **Histórico**: Veja todos seus agendamentos passados
-- ✅ **Perfil**: Atualize suas informações pessoais
-- ✅ **Cancelamento**: Cancele com 1 hora de antecedência
+| Tipo | Telefone | Senha | Descrição |
+|------|----------|-------|-----------|
+| **Cliente** | `11987654321` | `123456` | Acesso ao painel de agendamentos |
+| **Barbeiro** | `11987654322` | `123456` | Acesso ao dashboard completo |
+
+---
+
+## 📱 PWA - Progressive Web App
+
+O BarberFlow é 100% PWA - funciona offline e pode ser instalado como app nativa!
+
+### ✨ Capacidades PWA
+- ✅ Funciona completamente offline
+- ✅ Instale em Android, iOS, Windows, Mac
+- ✅ Ícone na tela inicial
+- ✅ Atualizações automáticas
+- ✅ Cache inteligente de dados
+
+### 📲 Como Instalar
+
+#### **Chrome/Edge (Desktop)**
+1. Abra http://localhost:3000
+2. Clique no ícone "Instalar" na barra de endereço
+3. Confirme
+
+#### **Mobile**
+1. Abra em navegador mobile
+2. Toque no menu (⋮ ou Share)
+3. Procure "Adicionar à Tela Inicial"
+4. Confirme
 
 ---
 
 ## 🔐 Segurança
 
-- 🔒 **JWT Authentication**: Tokens seguros com expiração
-- 🛡️ **Password Hashing**: Senhas criptografadas com bcrypt
-- ⚔️ **CORS Protection**: Controle de origem
-- 🔑 **Role-based Access**: Diferentes permissões por tipo de usuário
-- 🚫 **Rate Limiting**: Proteção contra abuso
+| Aspecto | Implementação |
+|--------|---------------|
+| **Autenticação** | JWT com refresh tokens |
+| **Senhas** | bcryptjs (10 rounds) |
+| **Validação** | Joi schemas nos endpoints |
+| **CORS** | Whitelist de origens |
+| **Rate Limiting** | 100 req/15min (geral), 5 req/15min (login) |
+| **HTTPS** | Enforced em produção |
+| **Encriptação** | Dados sensíveis criptografados |
 
 ---
 
-## 📝 Scripts Disponíveis
+## 📊 Dashboard - O que você pode fazer
+
+### 👨‍💼 **Painel do Barbeiro**
+- 📅 Ver agendamentos do dia e próximos
+- 👥 Gerenciar lista de clientes
+- 💰 Acompanhar receita em tempo real
+- 🔧 Configurar serviços e preços
+- 📈 Analisar tendências de negócio
+- ⚙️ Gerenciar horários de funcionamento
+
+### 👤 **Painel do Cliente**
+- 📅 Agendar novos horários
+- 📋 Ver histórico de agendamentos
+- ✏️ Editar perfil pessoal
+- ⭐ Deixar avaliações
+- ❤️ Favoritar barbearias
+
+---
+
+## 🛠️ Scripts Disponíveis
 
 ### Backend
-
-| Comando | Descrição |
-|---------|-----------|
-| `npm run dev` | Inicia servidor em modo desenvolvimento |
-| `npm run build` | Compila TypeScript para JavaScript |
-| `npm run start` | Executa versão compilada |
-| `npm run seed` | Popula banco com dados de teste |
-
-### Frontend
-
-| Comando | Descrição |
-|---------|-----------|
-| `npm run dev` | Inicia dev server (porta 3000) |
-| `npm run build` | Build otimizado para produção |
-| `npm run start` | Executa build de produção |
-| `npm run lint` | Verifica erros de linting |
-
----
-
-## 🎯 Roadmap
-
-- [x] Dashboard barbeiro completo
-- [x] Sistema de agendamentos
-- [x] Autenticação JWT
-- [x] API RESTful robusta
-- [ ] Integração WhatsApp Business
-- [ ] Pagamentos Stripe
-- [ ] App mobile (React Native)
-- [ ] Notificações em tempo real
-- [ ] Sistema de cupons e promoções
-- [ ] Integração com Google Calendar
-
----
-
-## 🚀 Deploy
-
-### Frontend
-- **Vercel** (Recomendado)
-  ```bash
-  vercel deploy
-  ```
-- **Netlify**: Conecte seu repositório do Git
-- **AWS S3 + CloudFront**: Para máximo desempenho
-
-### Backend
-- **Railway**: Connecção rápida com banco PostgreSQL
-- **Render.com**: Hospedagem gratuita com limite
-- **AWS EC2**: Para total controle
-- **DigitalOcean App Platform**: Alternativa econômica
-
-### Banco de Dados
-- **PostgreSQL** (Railway, Render, Supabase)
-- **MySQL** (Compatível via Prisma)
-
----
-
-## 🐛 Troubleshooting
-
-### Erro de conexão com API
 ```bash
-# Verifique se o backend está rodando
-curl http://localhost:3001/api/health
+npm run dev              # Desenvolvimento com hot-reload
+npm run build            # Build para produção
+npm run start            # Inicia versão compilada
+npm run seed             # Popula banco com dados
+npm run migrate          # Roda migrações pendentes
+npm run db:studio        # Abre Prisma Studio
 ```
 
-### Token inválido/expirado
+### Frontend
+```bash
+npm run dev              # Dev server (porta 3000)
+npm run build            # Build otimizado
+npm run start            # Inicia production build
+npm run lint             # Verifica erros de linting
+npm run format           # Formata código
+```
+
+---
+
+## 🚀 Deploy em Produção
+
+### Frontend - Vercel (Recomendado) ⭐
+
+```bash
+npm install -g vercel
+vercel login
+vercel deploy
+```
+
+**Ou conecte seu repositório GitHub automática**
+
+### Backend - Render.com
+
+```bash
+git push origin main  # Push dispara deploy automático
+```
+
+**Configurar variáveis de ambiente no painel do Render**
+
+### Banco de Dados
+
+```bash
+# Railway + PostgreSQL (mais fácil)
+# Render PostgreSQL (gratuito)
+# Supabase (alternativa gratuita)
+```
+
+---
+
+## 🐛 Solução de Problemas
+
+### ❌ Erro: `Cannot find module`
+```bash
+# Reinstale dependências
+rm -rf node_modules package-lock.json
+npm install --legacy-peer-deps
+```
+
+### ❌ Erro: `CORS not allowed`
+```bash
+# Verifique se FRONTEND_URL está correto no .env backend
+# Ou verifique se o Origin da requisição está no whitelist
+```
+
+### ❌ Erro: `Token inválido`
 ```bash
 # Limpe localStorage no navegador
 localStorage.clear()
 # Faça login novamente
 ```
 
-### Problemas com peer dependencies
+### ❌ Erro: `Database connection failed`
 ```bash
-npm install --legacy-peer-deps
-# ou
-npm install --force
+# Verifique DATABASE_URL
+# Teste conexão: psql $DATABASE_URL
 ```
 
 ---
 
-## 📞 Suporte & Contribuição
+## 🎯 Roadmap
 
-💬 **Dúvidas?** Abra uma [issue](https://github.com/Adryan-Francisco/barbearia-saas/issues)
-
-🤝 **Quer contribuir?** Faça um fork e envie um pull request
-
-✨ **Tem uma ideia?** Abre uma discussion ou issue
+- [x] Dashboard completo
+- [x] Sistema robusto de agendamentos
+- [x] Autenticação JWT
+- [x] API RESTful with TypeScript
+- [x] PWA (offline first)
+- [ ] WhatsApp Business API
+- [ ] Pagamentos Stripe
+- [ ] App mobile (React Native)
+- [ ] Integração Google Calendar
+- [ ] Sistema de promoções e cupons
 
 ---
 
-## 📄 License
+## 📞 Suporte & Comunidade
 
-Este projeto está sob a **MIT License** - veja o arquivo [LICENSE](LICENSE) para detalhes.
+| Canal | Link |
+|-------|------|
+| 🐛 **Issues** | [GitHub Issues](https://github.com/Adryan-Francisco/barbearia-saas/issues) |
+| 💬 **Discussions** | [GitHub Discussions](https://github.com/Adryan-Francisco/barbearia-saas/discussions) |
+| 📧 **Email** | contact@barbearia-saas.com |
+
+---
+
+## 🤝 Como Contribuir
+
+Tem uma ideia? Quer melhorar algo? Siga estes passos:
+
+1. Fork o projeto
+2. Crie uma branch para sua feature (`git checkout -b feature/AmazingFeature`)
+3. Commit suas mudanças (`git commit -m 'Add some AmazingFeature'`)
+4. Push para a branch (`git push origin feature/AmazingFeature`)
+5. Abra um Pull Request
+
+---
+
+## 📄 Licença
+
+Este projeto está sob a **MIT License** - você é livre para usar, modificar e distribuir.
+
+Veja [LICENSE](LICENSE) para mais detalhes.
+
+---
+
+## 🙌 Agradecimentos
+
+Obrigado a todos os contribuidores e à comunidade open source que torna projetos incríveis possíveis!
 
 ---
 
@@ -409,7 +466,9 @@ Este projeto está sob a **MIT License** - veja o arquivo [LICENSE](LICENSE) par
 
 ### Desenvolvido com ❤️ para simplificar a gestão de barbearias
 
-![BarberFlow Banner](https://img.shields.io/badge/BarberFlow-Made%20with%20%E2%9D%A4-ff69b4)
+![Stars](https://img.shields.io/github/stars/Adryan-Francisco/barbearia-saas?style=social)
+![Forks](https://img.shields.io/github/forks/Adryan-Francisco/barbearia-saas?style=social)
+![Last commit](https://img.shields.io/github/last-commit/Adryan-Francisco/barbearia-saas?style=social)
 
 [⬆ Voltar ao Topo](#-barberflow-saas)
 
