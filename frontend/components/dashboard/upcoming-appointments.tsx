@@ -5,6 +5,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Clock } from "lucide-react"
 import { useEffect, useState } from "react"
+import { barbershopAPI } from "@/lib/api"
 
 interface Appointment {
   id: string
@@ -27,25 +28,20 @@ export function UpcomingAppointments() {
         if (!token) return
 
         // Primeiro obtém a barbearia do usuário
-        const barbershopRes = await fetch('http://localhost:3001/api/barbershops/me', {
-          headers: { Authorization: `Bearer ${token}` }
-        })
+        const barbershopResult = await barbershopAPI.getMyBarbershop()
 
-        if (!barbershopRes.ok) return
+        if (barbershopResult.error) return
 
-        const barbershop = await barbershopRes.json()
-        setBarbershopName(barbershop.name || '')
+        const barbershop = barbershopResult.data as any
+        setBarbershopName(barbershop?.name || '')
 
         // Depois obtém os agendamentos
         const today = new Date().toISOString().split('T')[0]
-        const appointmentsRes = await fetch(
-          `http://localhost:3001/api/barbershops/${barbershop.id}/appointments/${today}`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        )
+        const appointmentsResult = await barbershopAPI.getAppointmentsByDate(barbershop.id, today)
 
-        if (appointmentsRes.ok) {
-          const data = await appointmentsRes.json()
-          setAppointments(data.appointments || [])
+        if (!appointmentsResult.error) {
+          const data = appointmentsResult.data as any
+          setAppointments(data?.appointments || [])
         }
       } catch (error) {
         console.error('Erro ao buscar agendamentos:', error)

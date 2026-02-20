@@ -244,6 +244,12 @@ export const schedulingAPI = {
 
 // ==================== BARBERSHOP ====================
 export const barbershopAPI = {
+  getMyBarbershop: () =>
+    apiCall(`/barbershops/me`),
+
+  getServices: (barbershop_id: string) =>
+    apiCall(`/barbershops/${barbershop_id}/services`),
+
   getAppointments: (barbershop_id: string) =>
     apiCall(`/barbershop/${barbershop_id}/appointments`),
 

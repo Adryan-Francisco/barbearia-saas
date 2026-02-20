@@ -3,6 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { useEffect, useState } from "react"
+import { barbershopAPI } from "@/lib/api"
 
 interface Service {
   id: string
@@ -23,24 +24,19 @@ export function TopServices() {
         if (!token) return
 
         // Primeiro obtém a barbearia do usuário
-        const barbershopRes = await fetch('http://localhost:3001/api/barbershops/me', {
-          headers: { Authorization: `Bearer ${token}` }
-        })
+        const barbershopResult = await barbershopAPI.getMyBarbershop()
 
-        if (!barbershopRes.ok) return
+        if (barbershopResult.error) return
 
-        const barbershop = await barbershopRes.json()
+        const barbershop = barbershopResult.data as any
 
         // Depois obtém os serviços
-        const servicesRes = await fetch(
-          `http://localhost:3001/api/barbershops/${barbershop.id}/services`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        )
+        const servicesResult = await barbershopAPI.getServices(barbershop.id)
 
-        if (servicesRes.ok) {
-          const data = await servicesRes.json()
+        if (!servicesResult.error) {
+          const data = servicesResult.data as any
           // Ordena por nome e adiciona contagem simulada
-          const sortedServices = (data.services || [])
+          const sortedServices = (data?.services || [])
             .sort((a: Service, b: Service) => b.price - a.price)
             .slice(0, 5)
             .map((service: Service, index: number) => ({

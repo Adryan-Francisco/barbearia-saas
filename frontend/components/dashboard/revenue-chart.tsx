@@ -22,6 +22,7 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart"
 import { useEffect, useState } from "react"
+import { barbershopAPI } from "@/lib/api"
 
 interface RevenueData {
   total_revenue: number
@@ -39,22 +40,17 @@ export function RevenueChart() {
         if (!token) return
 
         // Primeiro obtém a barbearia do usuário
-        const barbershopRes = await fetch('http://localhost:3001/api/barbershops/me', {
-          headers: { Authorization: `Bearer ${token}` }
-        })
+        const barbershopResult = await barbershopAPI.getMyBarbershop()
 
-        if (!barbershopRes.ok) return
+        if (barbershopResult.error) return
 
-        const barbershop = await barbershopRes.json()
+        const barbershop = barbershopResult.data as any
 
         // Depois obtém as estatísticas
-        const statsRes = await fetch(
-          `http://localhost:3001/api/barbershops/${barbershop.id}/stats`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        )
+        const statsResult = await barbershopAPI.getStats(barbershop.id)
 
-        if (statsRes.ok) {
-          const data = await statsRes.json()
+        if (!statsResult.error) {
+          const data = statsResult.data as any
           setRevenue(data)
         }
       } catch (error) {
