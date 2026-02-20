@@ -98,25 +98,52 @@ export async function barbershopRegister(req: Request, res: Response, next: Next
 
     const hashedPassword = await hashPassword(password);
 
-    const user = await prisma.user.create({
-      data: {
-        name,
-        phone,
-        password: hashedPassword,
-        role: 'barbershop_owner'
-      }
+    // Criar usuário e barbearia em transação para garantir integridade
+    const result = await prisma.$transaction(async (tx) => {
+      // Primeiro cria o usuário
+      const user = await tx.user.create({
+        data: {
+          name,
+          phone,
+          password: hashedPassword,
+          role: 'barbershop_owner'
+        }
+      });
+
+      // Depois cria a barbearia associada
+      const barbershop = await tx.barbershop.create({
+        data: {
+          name, // Usa o nome do proprietário como nome da barbearia inicialmente
+          phone, // Usa o telefone do proprietário
+          address: '', // Será preenchido depois na página de configurações
+          ownerId: user.id
+        }
+      });
+
+      return { user, barbershop };
     });
 
-    const token = generateToken({ id: user.id, name: user.name, phone: user.phone, role: user.role });
+    const token = generateToken({ 
+      id: result.user.id, 
+      name: result.user.name, 
+      phone: result.user.phone, 
+      role: result.user.role 
+    });
 
     res.status(201).json({
-      message: 'Barbeiro registrado com sucesso',
+      message: 'Barbeiro e barbearia registrados com sucesso',
       token,
       user: {
-        id: user.id,
-        name: user.name,
-        phone: user.phone,
-        role: user.role
+        id: result.user.id,
+        name: result.user.name,
+        phone: result.user.phone,
+        role: result.user.role
+      },
+      barbershop: {
+        id: result.barbershop.id,
+        name: result.barbershop.name,
+        phone: result.barbershop.phone,
+        address: result.barbershop.address
       }
     });
   } catch (error) {
