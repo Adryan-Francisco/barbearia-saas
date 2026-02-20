@@ -109,9 +109,15 @@ export async function getMyBarbershop(req: Request, res: Response, next: NextFun
         longitude: barbershop.longitude,
         rating: barbershop.rating,
         services: barbershop.services,
-        appointments: barbershop.appointments,
+        appointments: barbershop.appointments.map((apt: any) => ({
+          ...apt,
+          appointmentDate: apt.appointmentDate?.toISOString?.() || apt.appointmentDate,
+          createdAt: apt.createdAt?.toISOString?.() || apt.createdAt,
+          updatedAt: apt.updatedAt?.toISOString?.() || apt.updatedAt,
+        })),
         reviews: barbershop.reviews,
-        createdAt: barbershop.createdAt
+        createdAt: barbershop.createdAt?.toISOString?.() || barbershop.createdAt,
+        updatedAt: barbershop.updatedAt?.toISOString?.() || barbershop.updatedAt,
       }
     });
   } catch (error) {
@@ -209,6 +215,35 @@ export async function getBarbershopById(req: Request, res: Response, next: NextF
         createdAt: barbershop.createdAt
       }
     });
+  } catch (error) {
+    next(error);
+  }
+}
+
+// READ - Obter serviços de uma barbearia específica
+export async function getBarbershopServices(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { barbershop_id } = req.params;
+
+    if (!barbershop_id) {
+      throw new AppError('ID da barbearia é obrigatório', 400);
+    }
+
+    // Verificar se a barbearia existe
+    const barbershop = await prisma.barbershop.findUnique({
+      where: { id: barbershop_id }
+    });
+
+    if (!barbershop) {
+      throw new AppError('Barbearia não encontrada', 404);
+    }
+
+    // Buscar os serviços
+    const services = await prisma.service.findMany({
+      where: { barbershopId: barbershop_id }
+    });
+
+    res.json(services);
   } catch (error) {
     next(error);
   }

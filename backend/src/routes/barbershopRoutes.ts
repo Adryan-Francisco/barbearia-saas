@@ -4,6 +4,7 @@ import {
   getMyBarbershop,
   getAllBarbershops,
   getBarbershopById,
+  getBarbershopServices,
   updateBarbershop,
   deleteBarbershop,
   getBarbershopAppointments,
@@ -27,6 +28,9 @@ router.get('/', getAllBarbershops);
 
 // Obter uma barbearia específica (público)
 router.get('/:barbershop_id', getBarbershopById);
+
+// Obter serviços de uma barbearia específica (público)
+router.get('/:barbershop_id/services', getBarbershopServices);
 
 // Atualizar barbearia (requer autenticação)
 router.put('/:barbershop_id', authMiddleware, updateBarbershop);

@@ -93,30 +93,42 @@ export default function ServicosPage() {
       const barbershopResult = await barbershopAPI.getMyBarbershop()
       
       if (barbershopResult.error) {
-        console.warn("Erro ao buscar barbearia")
+        console.error("Erro ao buscar barbearia:", barbershopResult.error)
         setLoading(false)
         return
       }
       
       const barbershopData = barbershopResult.data as any
+      console.log("📊 Dados da barbearia recebidos:", barbershopData)
+      
       const barbershop = barbershopData?.barbershop
 
-      if (!barbershop?.id) {
-        console.warn("Barbearia não encontrada")
+      if (!barbershop) {
+        console.error("Estrutura de barbearia inválida ou nulo")
         setLoading(false)
         return
       }
+
+      if (!barbershop.id) {
+        console.error("ID da barbearia não encontrado:", barbershop)
+        setLoading(false)
+        return
+      }
+
+      console.log("✅ Barbearia encontrada com ID:", barbershop.id)
 
       // Busca os serviços dessa barbearia
       const servicesResult = await barbershopAPI.getServices(barbershop.id)
       
       if (servicesResult.error) {
-        console.warn("Erro ao buscar serviços")
+        console.error("Erro ao buscar serviços:", servicesResult.error)
         setLoading(false)
         return
       }
       
       const data = servicesResult.data as any
+      console.log("📋 Serviços recebidos:", data)
+      
       setServices(Array.isArray(data) ? data : [])
     } catch (error) {
       console.error("Erro ao buscar serviços:", error)
