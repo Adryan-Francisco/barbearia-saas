@@ -6,16 +6,16 @@ async function main() {
   console.log('🌱 Iniciando seed do banco de dados...');
 
   try {
-    // Limpar dados existentes
-    console.log('🗑️  Limpando dados anteriores...');
-    await prisma.cancellation.deleteMany();
-    await prisma.appointment.deleteMany();
-    await prisma.review.deleteMany();
-    await prisma.favorite.deleteMany();
-    await prisma.availability.deleteMany();
-    await prisma.service.deleteMany();
-    await prisma.barbershop.deleteMany();
-    await prisma.user.deleteMany();
+    // Verifica se já existe dados - se existir, não limpa
+    const existingUsers = await prisma.user.count();
+    
+    if (existingUsers > 0) {
+      console.log('⚠️  Banco de dados já possui dados. Seed abortada para não perder informações.');
+      return;
+    }
+
+    // Só limpa dados se for primeiro acesso (banco vazio)
+    console.log('🗑️  Preparando banco vazio...');
 
     // Criar usuários de teste
     console.log('👤 Criando usuários de teste...');
