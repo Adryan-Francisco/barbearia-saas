@@ -46,52 +46,59 @@ console.log('[STARTUP] All middleware and routes imported successfully');
 const app = express();
 const httpServer = createServer(app);
 const PORT = parseInt(process.env.PORT || '3001', 10);
-const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
+
+// Trust proxy para Render/Vercel
+app.set('trust proxy', 1);
 
 // Determinar origens permitidas
 const getAllowedOrigins = () => {
-  if (process.env.NODE_ENV === 'production') {
-    const origins = [
-      FRONTEND_URL,
-      'https://barberflow.vercel.app',
-      'https://barbearia-saas-eol3.vercel.app',
-    ];
-    if (process.env.VERCEL_URL) {
-      origins.push(`https://${process.env.VERCEL_URL}`);
-    }
-    return origins;
-  } else {
-    return ['http://localhost:3000', 'http://localhost:3002', 'http://localhost:3001', 'http://127.0.0.1:3000'];
+  const origins = [
+    'http://localhost:3000',
+    'http://localhost:3001',
+    'http://localhost:3002',
+    'http://127.0.0.1:3000',
+    'https://barberflow.vercel.app',
+    'https://barbearia-saas-eol3.vercel.app',
+  ];
+  
+  // Adicionar URL do frontend se definida
+  if (process.env.FRONTEND_URL) {
+    origins.push(process.env.FRONTEND_URL);
   }
+  
+  // Adicionar URL do Vercel se definida
+  if (process.env.VERCEL_URL) {
+    origins.push(`https://${process.env.VERCEL_URL}`);
+  }
+  
+  return origins;
 };
 
 console.log('[STARTUP] Express app initialized');
 console.log('[STARTUP] CORS origins:', getAllowedOrigins());
+console.log('[STARTUP] Trust proxy enabled for reverse proxy environments');
 
 // Basic security middleware
 app.use(helmet());
 app.use(compression());
 
-// CORS
+// CORS - permitir qualquer origem Vercel
 app.use(cors({
   origin: (origin, callback) => {
-    const allowedOrigins = getAllowedOrigins();
-    
+    // Sem origin (requisições mesma origem ou server-side) = permitir
     if (!origin) {
       return callback(null, true);
     }
     
-    if (allowedOrigins.includes(origin)) {
+    const allowedOrigins = getAllowedOrigins();
+    
+    // Verificar se está na lista ou se é vercel.app
+    if (allowedOrigins.includes(origin) || origin.includes('vercel.app')) {
       console.log('[CORS] Allowed origin:', origin);
       callback(null, true);
     } else {
       console.warn('[CORS] Blocked origin:', origin);
-      if (origin && origin.includes('vercel.app')) {
-        console.warn('[CORS] Allowing Vercel origin:', origin);
-        callback(null, true);
-      } else {
-        callback(new Error('CORS not allowed'));
-      }
+      callback(new Error('CORS not allowed'));
     }
   },
   credentials: true,
