@@ -8,6 +8,8 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle, CheckCircle, Loader2, Plus } from 'lucide-react';
+import { barbershopAPI } from '@/lib/api';
+import { useUserRole } from '@/hooks/use-user-role';
 
 interface Barbershop {
   id: string;
@@ -25,6 +27,9 @@ interface Barbershop {
 
 export default function BarbershopPage() {
   const router = useRouter();
+  // Hook que decodifica o JWT e verifica se é cliente ou dono
+  const { isClient, isLoading: roleLoading } = useUserRole();
+  
   const [barbershop, setBarbershop] = useState<Barbershop | null>(null);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
@@ -41,22 +46,29 @@ export default function BarbershopPage() {
     longitude: '',
   });
 
+  // Redireciona clientes para página de agendamentos
+  useEffect(() => {
+    if (roleLoading) return; // Aguarda o carregamento do role
+
+    if (isClient) {
+      router.push('/agendar');
+      return;
+    }
+  }, [isClient, roleLoading, router]);
+
   useEffect(() => {
     fetchBarbershop();
   }, []);
 
+  // Busca os dados da barbearia do usuário autenticado
   const fetchBarbershop = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:3001/api/barbershops/me', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      // Usa a API centralizada ao invés de fetch hardcoded
+      const result = await barbershopAPI.getMyBarbershop();
 
-      if (response.ok) {
-        const data = await response.json();
+      if (!result.error && result.data) {
+        const data = result.data as any;
         setBarbershop(data.barbershop);
         setFormData({
           name: data.barbershop.name,
@@ -65,8 +77,8 @@ export default function BarbershopPage() {
           latitude: data.barbershop.latitude || '',
           longitude: data.barbershop.longitude || '',
         });
-      } else if (response.status === 404) {
-        // Sem barbearia
+      } else if (result.error) {
+        // Se retornar erro 404, significa que não tem barbearia criada ainda
         setShowCreateForm(true);
       }
     } catch (err) {
@@ -91,13 +103,22 @@ export default function BarbershopPage() {
     setSuccess('');
 
     try {
+      // Obtém o token do localStorage para autenticação
       const token = localStorage.getItem('token');
-      const method = barbershop ? 'PUT' : 'POST';
-      const url = barbershop
-        ? `http://localhost:3001/api/barbershops/${barbershop.id}`
-        : 'http://localhost:3001/api/barbershops';
+      if (!token) {
+        setError('Token de autenticação não encontrado');
+        return;
+      }
 
-      const response = await fetch(url, {
+      // Determina se está criando ou atualizando baseado se tem barbershop
+      const isCreating = !barbershop;
+      const endpoint = barbershop ? `/barbershops/${barbershop.id}` : '/barbershops';
+      const method = barbershop ? 'PUT' : 'POST';
+
+      // Faz a requisição para criar/atualizar
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}${endpoint}`,
+        {
         method,
         headers: {
           'Content-Type': 'application/json',

@@ -18,6 +18,9 @@ import { Separator } from "@/components/ui/separator"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
 import { Building, Phone, MapPin, Clock, Trash2, Save, LogOut } from "lucide-react"
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
+import { barbershopAPI } from "@/lib/api"
+import { useUserRole } from "@/hooks/use-user-role"
 
 interface Barbershop {
   id: string
@@ -29,6 +32,10 @@ interface Barbershop {
 }
 
 export default function ConfiguraçõesPage() {
+  const router = useRouter()
+  // Hook que verifica o rol do usuário e oferece funções auxiliares
+  const { isClient, isLoading: roleLoading } = useUserRole()
+  
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [barbershop, setBarbershop] = useState<Barbershop | null>(null)
@@ -38,37 +45,41 @@ export default function ConfiguraçõesPage() {
     address: "",
   })
 
+  // Redireciona clientes para página de agendamentos
+  useEffect(() => {
+    if (roleLoading) return
+
+    if (isClient) {
+      router.push('/agendar')
+      return
+    }
+  }, [isClient, roleLoading, router])
+
   useEffect(() => {
     fetchBarbershop()
   }, [])
 
+  /**
+   * Busca os dados da barbearia do usuário autenticado
+   * Usa a API centralizada ao invés de fetch direto
+   */
   async function fetchBarbershop() {
     try {
       setLoading(true)
-      const token = localStorage.getItem("token")
-      if (!token) return
-
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api"
-      const res = await fetch(`${apiUrl}/barbershops/me`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-
-      if (!res.ok) {
-        if (res.status === 404) {
-          // Sem barbearia cadastrada
-          return
+      
+      // Busca os dados da barbearia usando a API centralizada
+      const result = await barbershopAPI.getMyBarbershop()
+      
+      if (!result.error && result.data) {
+        const data = result.data as any
+        if (data?.barbershop) {
+          setBarbershop(data.barbershop)
+          setFormData({
+            name: data.barbershop.name || "",
+            phone: data.barbershop.phone || "",
+            address: data.barbershop.address || "",
+          })
         }
-        throw new Error("Erro ao buscar barbearia")
-      }
-
-      const data = await res.json()
-      if (data?.barbershop) {
-        setBarbershop(data.barbershop)
-        setFormData({
-          name: data.barbershop.name || "",
-          phone: data.barbershop.phone || "",
-          address: data.barbershop.address || "",
-        })
       }
     } catch (error) {
       console.error("Erro ao buscar barbearia:", error)
@@ -77,6 +88,9 @@ export default function ConfiguraçõesPage() {
     }
   }
 
+  /**
+   * Salva as alterações da barbearia
+   */
   async function handleSave() {
     try {
       setSaving(true)

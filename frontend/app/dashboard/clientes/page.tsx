@@ -32,6 +32,9 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Plus, Search, MoreHorizontal, Phone, Mail, Calendar } from "lucide-react"
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
+import { barbershopAPI } from "@/lib/api"
+import { useUserRole } from "@/hooks/use-user-role"
 
 interface Client {
   id: string
@@ -44,6 +47,10 @@ interface Client {
   last_appointment_date: string
 }
 
+/**
+ * Extrai as iniciais do nome do cliente para exibir no avatar
+ * Exemplo: "João Silva" -> "JS"
+ */
 function getInitials(name: string): string {
   return name
     .split(" ")
@@ -54,6 +61,10 @@ function getInitials(name: string): string {
 }
 
 export default function ClientesPage() {
+  const router = useRouter()
+  // Hook que verifica o rol do usuário e oferece funções auxiliares
+  const { isClient, isLoading: roleLoading } = useUserRole()
+  
   const [search, setSearch] = useState("")
   const [clients, setClients] = useState<Client[]>([])
   const [loading, setLoading] = useState(true)
@@ -63,31 +74,39 @@ export default function ClientesPage() {
     newThisMonth: 0,
   })
 
+  // Redireciona clientes para página de agendamentos
+  useEffect(() => {
+    if (roleLoading) return
+
+    if (isClient) {
+      router.push('/agendar')
+      return
+    }
+  }, [isClient, roleLoading, router])
+
   useEffect(() => {
     fetchClients()
   }, [])
 
+  /**
+   * Busca os clientes da barbearia
+   * 1. Obtém dados da barbearia do usuário autenticado
+   * 2. Usa o ID da barbearia para buscar clientes
+   */
   async function fetchClients() {
     try {
       setLoading(true)
-      const token = localStorage.getItem("token")
-      if (!token) {
-        console.warn("Token não encontrado")
+      
+      // Busca dados da barbearia do usuário autenticado
+      const barbershopResult = await barbershopAPI.getMyBarbershop()
+      
+      if (barbershopResult.error) {
+        console.warn("Erro ao buscar barbearia")
         setLoading(false)
         return
       }
-
-      // Get barbershop
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api"
-      const barbershopRes = await fetch(`${apiUrl}/barbershops/me`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
       
-      if (!barbershopRes.ok) {
-        throw new Error("Erro ao buscar barbearia")
-      }
-      
-      const barbershopData = await barbershopRes.json()
+      const barbershopData = barbershopResult.data as any
       const barbershop = barbershopData?.barbershop
 
       if (!barbershop?.id) {
@@ -96,7 +115,11 @@ export default function ClientesPage() {
         return
       }
 
-      // Get clients
+      // Get clients - ao invés de fetch direto, precisamos fazer requisição customizada
+      // pois a API não tem função específica em barbershopAPI
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
+      const token = localStorage.getItem('token')
+      
       const clientsRes = await fetch(`${apiUrl}/analytics/${barbershop.id}/clients`, {
         headers: { Authorization: `Bearer ${token}` },
       })

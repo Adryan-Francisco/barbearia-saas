@@ -25,6 +25,9 @@ import {
 import { Plus, MoreVertical, Clock, DollarSign, Scissors, Sparkles } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
+import { barbershopAPI } from "@/lib/api"
+import { useUserRole } from "@/hooks/use-user-role"
 
 interface Service {
   id: string
@@ -34,6 +37,10 @@ interface Service {
   duration: number
 }
 
+/**
+ * Define cores para código categorias de serviços
+ * Facilita visualização rápida do tipo de serviço
+ */
 function getCategoryColor(category: string) {
   switch (category) {
     case "Corte":
@@ -52,34 +59,46 @@ function getCategoryColor(category: string) {
 }
 
 export default function ServicosPage() {
+  const router = useRouter()
+  // Hook que verifica se o usuário é cliente ou dono de barbearia
+  const { isClient, isLoading: roleLoading } = useUserRole()
+  
   const [services, setServices] = useState<Service[]>([])
   const [loading, setLoading] = useState(true)
+
+  // Redireciona clientes para página de agendamentos
+  useEffect(() => {
+    if (roleLoading) return
+
+    if (isClient) {
+      router.push('/agendar')
+      return
+    }
+  }, [isClient, roleLoading, router])
 
   useEffect(() => {
     fetchServices()
   }, [])
 
+  /**
+   * Busca os serviços da barbearia através da API centralizada
+   * 1. Primeiro obtém dados da barbearia do usuário autenticado
+   * 2. Depois busca os serviços dessa barbearia
+   */
   async function fetchServices() {
     try {
       setLoading(true)
-      const token = localStorage.getItem("token")
-      if (!token) {
-        console.warn("Token não encontrado")
+      
+      // Busca os dados da barbearia do usuário autenticado
+      const barbershopResult = await barbershopAPI.getMyBarbershop()
+      
+      if (barbershopResult.error) {
+        console.warn("Erro ao buscar barbearia")
         setLoading(false)
         return
       }
-
-      // Get barbershop
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api"
-      const barbershopRes = await fetch(`${apiUrl}/barbershops/me`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
       
-      if (!barbershopRes.ok) {
-        throw new Error("Erro ao buscar barbearia")
-      }
-      
-      const barbershopData = await barbershopRes.json()
+      const barbershopData = barbershopResult.data as any
       const barbershop = barbershopData?.barbershop
 
       if (!barbershop?.id) {
@@ -88,16 +107,16 @@ export default function ServicosPage() {
         return
       }
 
-      // Get services
-      const servicesRes = await fetch(`${apiUrl}/barbershops/${barbershop.id}/services`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
+      // Busca os serviços dessa barbearia
+      const servicesResult = await barbershopAPI.getServices(barbershop.id)
       
-      if (!servicesRes.ok) {
-        throw new Error("Erro ao buscar serviços")
+      if (servicesResult.error) {
+        console.warn("Erro ao buscar serviços")
+        setLoading(false)
+        return
       }
       
-      const data = await servicesRes.json()
+      const data = servicesResult.data as any
       setServices(Array.isArray(data) ? data : [])
     } catch (error) {
       console.error("Erro ao buscar serviços:", error)

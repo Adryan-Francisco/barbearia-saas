@@ -25,8 +25,12 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Plus, Clock, ChevronLeft, ChevronRight, Filter } from "lucide-react"
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
+import { barbershopAPI } from "@/lib/api"
+import { useUserRole } from "@/hooks/use-user-role"
 
+// Horários disponíveis para agendamento (em intervalos de 30 minutos)
 const timeSlots = [
   "08:00", "08:30", "09:00", "09:30", "10:00", "10:30",
   "11:00", "11:30", "12:00", "13:00", "13:30", "14:00",
@@ -45,6 +49,10 @@ interface Appointment {
   status: string
 }
 
+/**
+ * Define cores para diferentes status de agendamento
+ * Facilita visualização rápida do estado do agendamento
+ */
 function getStatusColor(status: string) {
   switch (status?.toLowerCase()) {
     case "confirmado":
@@ -58,6 +66,9 @@ function getStatusColor(status: string) {
   }
 }
 
+/**
+ * Extrai as iniciais do nome para exibir no avatar
+ */
 function getInitials(name: string): string {
   return name
     .split(" ")
@@ -67,6 +78,10 @@ function getInitials(name: string): string {
     .slice(0, 2)
 }
 
+/**
+ * Gera os 7 dias da semana a partir de uma data inicial
+ * Retorna dia abreviado e nome completo
+ */
 function getWeekDays(startDate: Date) {
   const days = []
   for (let i = 0; i < 7; i++) {
@@ -93,11 +108,25 @@ function getWeekDays(startDate: Date) {
 }
 
 export default function AgendamentosPage() {
+  const router = useRouter()
+  // Hook que verifica o rol do usuário e oferece funções auxiliares
+  const { isClient, isLoading: roleLoading } = useUserRole()
+  
   const [selectedDay, setSelectedDay] = useState(0)
   const [appointments, setAppointments] = useState<Appointment[]>([])
   const [loading, setLoading] = useState(true)
   const [weekDays, setWeekDays] = useState<any[]>([])
   const [startDate, setStartDate] = useState(new Date())
+
+  // Redireciona clientes para página de agendamentos
+  useEffect(() => {
+    if (roleLoading) return
+
+    if (isClient) {
+      router.push('/agendar')
+      return
+    }
+  }, [isClient, roleLoading, router])
 
   useEffect(() => {
     setWeekDays(getWeekDays(startDate))
@@ -107,27 +136,25 @@ export default function AgendamentosPage() {
     fetchAppointments()
   }, [])
 
+  /**
+   * Busca os agendamentos da barbearia
+   * 1. Obtém dados da barbearia do usuário autenticado
+   * 2. Busca todos os agendamentos da barbearia
+   */
   async function fetchAppointments() {
     try {
       setLoading(true)
-      const token = localStorage.getItem("token")
-      if (!token) {
-        console.warn("Token não encontrado")
+      
+      // Busca dados da barbearia do usuário autenticado
+      const barbershopResult = await barbershopAPI.getMyBarbershop()
+      
+      if (barbershopResult.error) {
+        console.warn("Erro ao buscar barbearia")
         setLoading(false)
         return
       }
-
-      // Get barbershop
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api"
-      const barbershopRes = await fetch(`${apiUrl}/barbershops/me`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
       
-      if (!barbershopRes.ok) {
-        throw new Error("Erro ao buscar barbearia")
-      }
-      
-      const barbershopData = await barbershopRes.json()
+      const barbershopData = barbershopResult.data as any
       const barbershop = barbershopData?.barbershop
 
       if (!barbershop?.id) {
@@ -136,17 +163,14 @@ export default function AgendamentosPage() {
         return
       }
 
-      // Get appointments
-      const appointmentsRes = await fetch(
-        `/api/barbershops/${barbershop.id}/appointments`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      )
+      // Get appointments usando a API centralizada
+      const appointmentsResult = await barbershopAPI.getAppointments(barbershop.id)
       
-      if (!appointmentsRes.ok) {
+      if (appointmentsResult.error) {
         throw new Error("Erro ao buscar agendamentos")
       }
       
-      const data = await appointmentsRes.json()
+      const data = appointmentsResult.data as any
       setAppointments(Array.isArray(data) ? data : [])
     } catch (error) {
       console.error("Erro ao buscar agendamentos:", error)
