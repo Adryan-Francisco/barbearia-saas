@@ -7,3 +7,10 @@ build/
 *.log
 .DS_Store
 data/
+
+# Tests (local only)
+__tests__/
+jest.config.js
+run-tests.sh
+run-tests.ps1
+*.e2e.ts
