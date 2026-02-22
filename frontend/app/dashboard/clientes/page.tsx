@@ -117,7 +117,8 @@ export default function ClientesPage() {
 
       // Get clients - ao invés de fetch direto, precisamos fazer requisição customizada
       // pois a API não tem função específica em barbershopAPI
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
+      const apiUrl = baseUrl.includes('/api') ? baseUrl : `${baseUrl}/api`
       const token = localStorage.getItem('token')
       
       const clientsRes = await fetch(`${apiUrl}/analytics/${barbershop.id}/clients`, {

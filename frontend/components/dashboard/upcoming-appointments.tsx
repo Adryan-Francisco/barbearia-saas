@@ -32,8 +32,11 @@ export function UpcomingAppointments() {
 
         if (barbershopResult.error) return
 
-        const barbershop = barbershopResult.data as any
+        const barbershopData = barbershopResult.data as any
+        const barbershop = barbershopData?.barbershop || barbershopData
         setBarbershopName(barbershop?.name || '')
+
+        if (!barbershop?.id) return
 
         // Depois obtém os agendamentos
         const today = new Date().toISOString().split('T')[0]

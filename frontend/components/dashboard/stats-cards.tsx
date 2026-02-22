@@ -30,7 +30,10 @@ export function StatsCards() {
 
         if (barbershopResult.error) return
 
-        const barbershop = barbershopResult.data as any
+        const barbershopData = barbershopResult.data as any
+        const barbershop = barbershopData?.barbershop || barbershopData
+
+        if (!barbershop?.id) return
 
         // Depois obtém as estatísticas
         const statsResult = await barbershopAPI.getStats(barbershop.id)

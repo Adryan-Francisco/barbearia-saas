@@ -106,7 +106,7 @@ export default function RelatoriosPage() {
 
       // Get appointments
       const appointmentsRes = await fetch(
-        `/api/barbershops/${barbershop.id}/appointments`,
+        `${apiUrl}/barbershops/${barbershop.id}/appointments`,
         { headers: { Authorization: `Bearer ${token}` } }
       )
       

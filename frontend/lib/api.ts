@@ -251,29 +251,29 @@ export const barbershopAPI = {
     apiCall(`/barbershops/${barbershop_id}/services`),
 
   getAppointments: (barbershop_id: string) =>
-    apiCall(`/barbershop/${barbershop_id}/appointments`),
+    apiCall(`/barbershops/${barbershop_id}/appointments`),
 
   getAppointmentsByDate: (barbershop_id: string, date: string) =>
-    apiCall(`/barbershop/${barbershop_id}/appointments/${date}`),
+    apiCall(`/barbershops/${barbershop_id}/appointments/${date}`),
 
   confirmAppointment: (appointment_id: string) =>
-    apiCall(`/barbershop/appointments/${appointment_id}/confirm`, {
+    apiCall(`/barbershops/appointments/${appointment_id}/confirm`, {
       method: 'PUT',
     }),
 
   getStats: (barbershop_id: string) =>
-    apiCall(`/barbershop/${barbershop_id}/stats`),
+    apiCall(`/barbershops/${barbershop_id}/stats`),
 
   getRealtimeMetrics: (barbershop_id: string) =>
-    apiCall(`/barbershop/${barbershop_id}/realtime-metrics`),
+    apiCall(`/barbershops/${barbershop_id}/realtime-metrics`),
 
   getHourlyMetrics: (barbershop_id: string, date?: string) =>
     apiCall(
-      `/barbershop/${barbershop_id}/hourly-metrics${date ? `?date=${date}` : ''}`
+      `/barbershops/${barbershop_id}/hourly-metrics${date ? `?date=${date}` : ''}`
     ),
 
   getDailyTrend: (barbershop_id: string, days: number = 7) =>
-    apiCall(`/barbershop/${barbershop_id}/daily-trend?days=${days}`),
+    apiCall(`/barbershops/${barbershop_id}/daily-trend?days=${days}`),
 };
 
 // ==================== REVIEWS ====================

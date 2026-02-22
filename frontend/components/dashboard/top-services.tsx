@@ -28,7 +28,10 @@ export function TopServices() {
 
         if (barbershopResult.error) return
 
-        const barbershop = barbershopResult.data as any
+        const barbershopData = barbershopResult.data as any
+        const barbershop = barbershopData?.barbershop || barbershopData
+
+        if (!barbershop?.id) return
 
         // Depois obtém os serviços
         const servicesResult = await barbershopAPI.getServices(barbershop.id)
