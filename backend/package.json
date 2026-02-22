@@ -1,6 +1,6 @@
 {
   "name": "barbearia-backend",
-  "version": "1.0.9",
+  "version": "1.0.10",
   "description": "SaaS de agendamento para barbearias",
   "main": "dist/index.js",
   "scripts": {
