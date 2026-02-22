@@ -113,35 +113,41 @@ async function main() {
     });
     console.log('✅ Barbearia criada:', barbershop6.name);
 
-    // Criar serviços para a primeira barbearia
+    // Criar serviços para todas as barbearias
     console.log('\n🔧 Criando serviços...');
     
-    await prisma.service.createMany({
-      data: [
-        {
-          barbershopId: barbershop1.id,
-          name: 'Corte de Cabelo',
-          description: 'Corte clássico',
-          price: 50,
-          duration: 30
-        },
-        {
-          barbershopId: barbershop1.id,
-          name: 'Barba',
-          description: 'Refilagem de barba',
-          price: 30,
-          duration: 20
-        },
-        {
-          barbershopId: barbershop1.id,
-          name: 'Corte + Barba',
-          description: 'Corte e barba juntos',
-          price: 70,
-          duration: 50
-        }
-      ]
-    });
-    console.log('✅ Serviços criados para Corte Fino Barbearia');
+    const servicesData = [
+      {
+        name: 'Corte de Cabelo',
+        description: 'Corte clássico',
+        price: 50,
+        duration: 30
+      },
+      {
+        name: 'Barba',
+        description: 'Refilagem de barba',
+        price: 30,
+        duration: 20
+      },
+      {
+        name: 'Corte + Barba',
+        description: 'Corte e barba juntos',
+        price: 70,
+        duration: 50
+      }
+    ];
+
+    const barbershops = [barbershop1, barbershop2, barbershop3, barbershop4, barbershop5, barbershop6];
+    
+    for (const barbershop of barbershops) {
+      await prisma.service.createMany({
+        data: servicesData.map(service => ({
+          ...service,
+          barbershopId: barbershop.id
+        }))
+      });
+      console.log(`✅ Serviços criados para ${barbershop.name}`);
+    }
 
     console.log('\n✅ Seed concluído com sucesso!');
     console.log('\n📋 Usuários de teste criados:');
