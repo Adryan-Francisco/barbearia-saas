@@ -29,9 +29,9 @@ services:
       - key: NODE_ENV
         value: production
       - key: NEXT_PUBLIC_API_URL
-        value: https://barbearia-saas-h7lv.onrender.com/api
+        value: https://barbearia-saas-backend.onrender.com
       - key: NEXT_PUBLIC_WS_URL
-        value: https://barbearia-saas-h7lv.onrender.com
+        value: https://barbearia-saas-backend.onrender.com
 
 databases:
   - name: barbearia-db
