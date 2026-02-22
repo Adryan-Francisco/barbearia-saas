@@ -235,7 +235,10 @@ export default function AgendarPage() {
   async function fetchBarbershops() {
     try {
       console.log("🔄 Iniciando fetch de barbearias...")
-      const res = await fetch("http://localhost:3001/api/barbershops")
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
+      // Garantir que a URL tem /api
+      const baseUrl = apiUrl.includes('/api') ? apiUrl : `${apiUrl}/api`
+      const res = await fetch(`${baseUrl}/barbershops`)
       console.log("📊 Status da resposta:", res.status, res.ok)
       
       if (res.ok) {
