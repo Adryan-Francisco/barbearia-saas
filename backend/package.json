@@ -1,6 +1,6 @@
 {
   "name": "barbearia-backend",
-  "version": "1.0.4",
+  "version": "1.0.6",
   "description": "SaaS de agendamento para barbearias",
   "main": "dist/index.js",
   "scripts": {
@@ -12,7 +12,8 @@
     "seed": "ts-node prisma/seed.ts",
     "db:reset": "prisma migrate reset --force",
     "db:studio": "prisma studio",
-    "version:bump": "node scripts/bump-version.js"
+    "version:bump": "node scripts/bump-version.js",
+    "commit": "node scripts/auto-commit.js"
   },
   "keywords": [
     "barbearia",
@@ -47,6 +48,7 @@
     "@types/jsonwebtoken": "^9.0.2",
     "@types/node": "^18.15.11",
     "@types/uuid": "^9.0.2",
+    "husky": "^9.1.7",
     "jest": "^30.2.0",
     "ts-jest": "^29.4.6",
     "ts-node": "^10.9.1",

@@ -1,0 +1,17 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+# Auto-increment version on commit
+if [ -f "backend/package.json" ]; then
+  cd backend
+  node scripts/bump-version.js > /dev/null 2>&1
+  cd ..
+  
+  # Stage the updated package.json if changed
+  if git diff --quiet backend/package.json; then
+    :
+  else
+    git add backend/package.json
+  fi
+fi
+
