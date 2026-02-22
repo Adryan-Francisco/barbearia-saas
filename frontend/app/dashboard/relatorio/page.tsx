@@ -69,7 +69,8 @@ export default function RelatorioPage() {
       if (!token) return
 
       // Get barbershop
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api"
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"
+      const apiUrl = baseUrl.includes('/api') ? baseUrl : `${baseUrl}/api`
       const barbershopRes = await fetch(`${apiUrl}/barbershops/me`, {
         headers: { Authorization: `Bearer ${token}` },
       })

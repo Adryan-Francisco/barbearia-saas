@@ -222,7 +222,9 @@ export default function BarbershopBookingPage({
     async function fetchBarbershop() {
       try {
         console.log("🔄 Buscando dados da barbearia:", barbershopId)
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api"
+        const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"
+        // Garantir que a URL tem /api
+        const apiUrl = baseUrl.includes('/api') ? baseUrl : `${baseUrl}/api`
         const res = await fetch(`${apiUrl}/barbershops/${barbershopId}`)
         
         if (!res.ok) {

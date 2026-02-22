@@ -97,7 +97,8 @@ export default function ConfiguraçõesPage() {
       const token = localStorage.getItem("token")
       if (!token || !barbershop) return
 
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api"
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"
+      const apiUrl = baseUrl.includes('/api') ? baseUrl : `${baseUrl}/api`
       const res = await fetch(`${apiUrl}/barbershops/${barbershop.id}`, {
         method: "PUT",
         headers: {
@@ -126,7 +127,8 @@ export default function ConfiguraçõesPage() {
       const token = localStorage.getItem("token")
       if (!token || !barbershop) return
 
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api"
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"
+      const apiUrl = baseUrl.includes('/api') ? baseUrl : `${baseUrl}/api`
       const res = await fetch(`${apiUrl}/barbershops/${barbershop.id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
