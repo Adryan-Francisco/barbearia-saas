@@ -22,7 +22,6 @@ import { cn } from "@/lib/utils"
 import { useRouter } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
 import { schedulingAPI } from "@/lib/api"
-import { io } from "socket.io-client"
 
 const placeholderImage = "/placeholder.svg"
 
@@ -158,38 +157,39 @@ export default function AgendarPage() {
     selectedBarbershopIdRef.current = selectedBarbershop?.id ?? null
   }, [selectedBarbershop])
 
-  useEffect(() => {
-    if (!selectedBarbershop) return
+  // WebSocket desabilitado temporariamente - usando apenas API REST
+  // useEffect(() => {
+  //   if (!selectedBarbershop) return
 
-    const socketUrl = process.env.NEXT_PUBLIC_API_URL
-      ? process.env.NEXT_PUBLIC_API_URL.replace(/\/api\/?$/, "")
-      : "http://localhost:3001"
+  //   const socketUrl = process.env.NEXT_PUBLIC_API_URL
+  //     ? process.env.NEXT_PUBLIC_API_URL.replace(/\/api\/?$/, "")
+  //     : "http://localhost:3001"
 
-    const socket = io(socketUrl, {
-      path: "/socket.io",
-      transports: ["websocket", "polling"],
-      auth: {
-        barbershopId: selectedBarbershop.id,
-        role: "public",
-      },
-    })
+  //   const socket = io(socketUrl, {
+  //     path: "/socket.io",
+  //     transports: ["websocket", "polling"],
+  //     auth: {
+  //       barbershopId: selectedBarbershop.id,
+  //       role: "public",
+  //     },
+  //   })
 
-    socket.on("slots:update", (payload: SlotsUpdatePayload) => {
-      const currentDate = selectedDateRef.current
-      const currentBarbershopId = selectedBarbershopIdRef.current
+  //   socket.on("slots:update", (payload: SlotsUpdatePayload) => {
+  //     const currentDate = selectedDateRef.current
+  //     const currentBarbershopId = selectedBarbershopIdRef.current
 
-      if (!currentDate || !currentBarbershopId) return
-      if (payload.barbershopId !== currentBarbershopId) return
-      if (payload.date !== formatDateForApi(currentDate)) return
+  //     if (!currentDate || !currentBarbershopId) return
+  //     if (payload.barbershopId !== currentBarbershopId) return
+  //     if (payload.date !== formatDateForApi(currentDate)) return
 
-      setAvailableSlots(payload.slots ?? [])
-      setSlotsLoading(false)
-    })
+  //     setAvailableSlots(payload.slots ?? [])
+  //     setSlotsLoading(false)
+  //   })
 
-    return () => {
-      socket.disconnect()
-    }
-  }, [selectedBarbershop])
+  //   return () => {
+  //     socket.disconnect()
+  //   }
+  // }, [selectedBarbershop])
 
   useEffect(() => {
     const fetchSlots = async () => {
