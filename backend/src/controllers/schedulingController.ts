@@ -36,13 +36,16 @@ export async function createAppointment(req: AuthRequest, res: Response, next: N
       throw new AppError('Este horário não está disponível', 409);
     }
 
-    // Verify barbershop and service exist
+    // Verify barbershop and service exist AND service belongs to barbershop
     const [barbershop, service] = await Promise.all([
       prisma.barbershop.findUnique({ where: { id: barbershop_id } }),
-      prisma.service.findUnique({ where: { id: service_id } })
+      prisma.service.findUnique({ 
+        where: { id: service_id },
+        include: { barbershop: true }
+      })
     ]);
 
-    if (!barbershop || !service) {
+    if (!barbershop || !service || service.barbershopId !== barbershop_id) {
       throw new AppError('Barbearia ou serviço não encontrados', 404);
     }
 
