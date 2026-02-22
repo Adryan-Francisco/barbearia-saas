@@ -3,7 +3,7 @@ services:
     name: barbearia-saas-backend
     runtime: node
     plan: free
-    buildCommand: cd backend && npm install && npm run build
+    buildCommand: cd backend && npm install && npm run build && npx prisma migrate deploy && npx prisma db seed
     startCommand: cd backend && node dist/index.js
     envVars:
       - key: NODE_ENV
