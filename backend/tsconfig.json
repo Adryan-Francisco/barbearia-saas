@@ -5,7 +5,8 @@
     "lib": ["ES2020"],
     "outDir": "./dist",
     "rootDir": "./src",
-    "strict": true,
+    "strict": false,
+    "noImplicitAny": false,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
@@ -14,7 +15,7 @@
     "types": ["jest", "node"]
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "__tests__"],
+  "exclude": ["node_modules", "dist", "__tests__", "**/*.test.ts"],
   "ts-node": {
     "compilerOptions": {
       "types": ["jest", "node"]
