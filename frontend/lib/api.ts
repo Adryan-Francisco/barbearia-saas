@@ -250,6 +250,17 @@ export const barbershopAPI = {
   getServices: (barbershop_id: string) =>
     apiCall(`/barbershops/${barbershop_id}/services`),
 
+  createService: (barbershop_id: string, data: { name: string; description?: string; price: number; duration: number }) =>
+    apiCall(`/barbershops/${barbershop_id}/services`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  deleteService: (service_id: string) =>
+    apiCall(`/barbershops/services/${service_id}`, {
+      method: 'DELETE',
+    }),
+
   getAppointments: (barbershop_id: string) =>
     apiCall(`/barbershops/${barbershop_id}/appointments`),
 

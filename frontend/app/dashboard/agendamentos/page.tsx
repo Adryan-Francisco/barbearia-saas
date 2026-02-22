@@ -27,7 +27,7 @@ import { Plus, Clock, ChevronLeft, ChevronRight, Filter } from "lucide-react"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
-import { barbershopAPI } from "@/lib/api"
+import { barbershopAPI, schedulingAPI } from "@/lib/api"
 import { useUserRole } from "@/hooks/use-user-role"
 
 // Horários disponíveis para agendamento (em intervalos de 30 minutos)
@@ -117,6 +117,16 @@ export default function AgendamentosPage() {
   const [loading, setLoading] = useState(true)
   const [weekDays, setWeekDays] = useState<any[]>([])
   const [startDate, setStartDate] = useState(new Date())
+  const [barbershopId, setBarbershopId] = useState<string | null>(null)
+  const [services, setServices] = useState<{ id: string; name: string }[]>([])
+  const [dialogOpen, setDialogOpen] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [appointmentForm, setAppointmentForm] = useState({
+    client: '',
+    service_id: '',
+    date: '',
+    time: '',
+  })
 
   // Redireciona clientes para página de agendamentos
   useEffect(() => {
@@ -163,8 +173,13 @@ export default function AgendamentosPage() {
         return
       }
 
-      // Get appointments usando a API centralizada
-      const appointmentsResult = await barbershopAPI.getAppointments(barbershop.id)
+      setBarbershopId(barbershop.id)
+
+      // Buscar serviços e agendamentos em paralelo
+      const [appointmentsResult, servicesResult] = await Promise.all([
+        barbershopAPI.getAppointments(barbershop.id),
+        barbershopAPI.getServices(barbershop.id),
+      ])
       
       if (appointmentsResult.error) {
         throw new Error("Erro ao buscar agendamentos")
@@ -172,11 +187,71 @@ export default function AgendamentosPage() {
       
       const data = appointmentsResult.data as any
       setAppointments(Array.isArray(data) ? data : [])
+
+      // Carregar serviços para o formulário
+      if (!servicesResult.error) {
+        const servicesData = servicesResult.data as any
+        const servicesList = servicesData?.services || (Array.isArray(servicesData) ? servicesData : [])
+        setServices(servicesList)
+      }
     } catch (error) {
       console.error("Erro ao buscar agendamentos:", error)
       setAppointments([])
     } finally {
       setLoading(false)
+    }
+  }
+
+  /**
+   * Cria um novo agendamento via API
+   */
+  async function handleCreateAppointment() {
+    if (!barbershopId) {
+      alert("Barbearia não encontrada. Recarregue a página.")
+      return
+    }
+
+    if (!appointmentForm.service_id) {
+      alert("Selecione um serviço")
+      return
+    }
+
+    if (!appointmentForm.date) {
+      alert("Selecione uma data")
+      return
+    }
+
+    if (!appointmentForm.time) {
+      alert("Selecione um horário")
+      return
+    }
+
+    try {
+      setSaving(true)
+      
+      const result = await schedulingAPI.createAppointment({
+        barbershop_id: barbershopId,
+        service_id: appointmentForm.service_id,
+        appointment_date: appointmentForm.date,
+        appointment_time: appointmentForm.time,
+      })
+
+      if (result.error) {
+        alert(`Erro ao criar agendamento: ${result.error.message}`)
+        return
+      }
+
+      // Limpar formulário e fechar dialog
+      setAppointmentForm({ client: '', service_id: '', date: '', time: '' })
+      setDialogOpen(false)
+      
+      // Recarregar agendamentos
+      await fetchAppointments()
+    } catch (error) {
+      console.error("Erro ao criar agendamento:", error)
+      alert("Erro ao criar agendamento. Tente novamente.")
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -233,7 +308,7 @@ export default function AgendamentosPage() {
               </Button>
             </div>
             <div className="flex items-center gap-3">
-              <Dialog>
+              <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
                 <DialogTrigger asChild>
                   <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
                     <Plus className="w-4 h-4 mr-2" />
@@ -248,30 +323,24 @@ export default function AgendamentosPage() {
                     </DialogDescription>
                   </DialogHeader>
                   <div className="flex flex-col gap-4 py-4">
-                    <div className="flex flex-col gap-2">
-                      <Label htmlFor="client" className="text-foreground">
-                        Cliente
-                      </Label>
-                      <Input
-                        id="client"
-                        placeholder="Nome do cliente"
-                        className="bg-secondary border-border text-foreground"
-                      />
-                    </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="flex flex-col gap-2">
                         <Label htmlFor="service" className="text-foreground">
                           Servico
                         </Label>
-                        <Select>
+                        <Select
+                          value={appointmentForm.service_id}
+                          onValueChange={(value) => setAppointmentForm({ ...appointmentForm, service_id: value })}
+                        >
                           <SelectTrigger className="bg-secondary border-border text-foreground">
                             <SelectValue placeholder="Selecione" />
                           </SelectTrigger>
                           <SelectContent className="bg-card border-border">
-                            <SelectItem value="corte-degrade">Corte Degrade</SelectItem>
-                            <SelectItem value="corte-barba">Corte + Barba</SelectItem>
-                            <SelectItem value="barba">Barba</SelectItem>
-                            <SelectItem value="corte-social">Corte Social</SelectItem>
+                            {services.map((s) => (
+                              <SelectItem key={s.id} value={s.id}>
+                                {s.name}
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                       </div>
@@ -279,14 +348,23 @@ export default function AgendamentosPage() {
                         <Label htmlFor="date" className="text-foreground">
                           Data
                         </Label>
-                        <Input id="date" type="date" className="bg-secondary border-border text-foreground" />
+                        <Input
+                          id="date"
+                          type="date"
+                          className="bg-secondary border-border text-foreground"
+                          value={appointmentForm.date}
+                          onChange={(e) => setAppointmentForm({ ...appointmentForm, date: e.target.value })}
+                        />
                       </div>
                     </div>
                     <div className="flex flex-col gap-2">
                       <Label htmlFor="time" className="text-foreground">
                         Horario
                       </Label>
-                      <Select>
+                      <Select
+                        value={appointmentForm.time}
+                        onValueChange={(value) => setAppointmentForm({ ...appointmentForm, time: value })}
+                      >
                         <SelectTrigger className="bg-secondary border-border text-foreground">
                           <SelectValue placeholder="Horario" />
                         </SelectTrigger>
@@ -301,11 +379,19 @@ export default function AgendamentosPage() {
                     </div>
                   </div>
                   <DialogFooter>
-                    <Button variant="secondary" className="bg-secondary text-secondary-foreground">
+                    <Button
+                      variant="secondary"
+                      className="bg-secondary text-secondary-foreground"
+                      onClick={() => setDialogOpen(false)}
+                    >
                       Cancelar
                     </Button>
-                    <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
-                      Agendar
+                    <Button
+                      className="bg-primary text-primary-foreground hover:bg-primary/90"
+                      onClick={handleCreateAppointment}
+                      disabled={saving}
+                    >
+                      {saving ? "Agendando..." : "Agendar"}
                     </Button>
                   </DialogFooter>
                 </DialogContent>

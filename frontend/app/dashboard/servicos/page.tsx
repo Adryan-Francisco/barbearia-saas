@@ -65,6 +65,15 @@ export default function ServicosPage() {
   
   const [services, setServices] = useState<Service[]>([])
   const [loading, setLoading] = useState(true)
+  const [barbershopId, setBarbershopId] = useState<string | null>(null)
+  const [dialogOpen, setDialogOpen] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [formData, setFormData] = useState({
+    name: '',
+    description: '',
+    price: '',
+    duration: '45',
+  })
 
   // Redireciona clientes para página de agendamentos
   useEffect(() => {
@@ -116,6 +125,7 @@ export default function ServicosPage() {
       }
 
       console.log("✅ Barbearia encontrada com ID:", barbershop.id)
+      setBarbershopId(barbershop.id)
 
       // Busca os serviços dessa barbearia
       const servicesResult = await barbershopAPI.getServices(barbershop.id)
@@ -129,10 +139,88 @@ export default function ServicosPage() {
       const data = servicesResult.data as any
       console.log("📋 Serviços recebidos:", data)
       
-      setServices(Array.isArray(data) ? data : [])
+      const servicesList = data?.services || (Array.isArray(data) ? data : [])
+      setServices(servicesList)
     } catch (error) {
       console.error("Erro ao buscar serviços:", error)
       setServices([])
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  /**
+   * Salva um novo serviço na barbearia
+   */
+  async function handleSaveService() {
+    if (!barbershopId) {
+      alert("Barbearia não encontrada. Recarregue a página.")
+      return
+    }
+
+    if (!formData.name.trim()) {
+      alert("Nome do serviço é obrigatório")
+      return
+    }
+
+    const price = parseFloat(formData.price.replace(',', '.').replace('R$', '').trim())
+    if (isNaN(price) || price <= 0) {
+      alert("Informe um preço válido")
+      return
+    }
+
+    const duration = parseInt(formData.duration)
+    if (isNaN(duration) || duration <= 0) {
+      alert("Informe uma duração válida")
+      return
+    }
+
+    try {
+      setSaving(true)
+      const result = await barbershopAPI.createService(barbershopId, {
+        name: formData.name.trim(),
+        description: formData.description.trim() || undefined,
+        price,
+        duration,
+      })
+
+      if (result.error) {
+        alert(`Erro ao criar serviço: ${result.error.message}`)
+        return
+      }
+
+      // Limpar formulário e fechar dialog
+      setFormData({ name: '', description: '', price: '', duration: '45' })
+      setDialogOpen(false)
+      
+      // Recarregar serviços
+      await fetchServices()
+    } catch (error) {
+      console.error("Erro ao salvar serviço:", error)
+      alert("Erro ao salvar serviço. Tente novamente.")
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  /**
+   * Exclui um serviço
+   */
+  async function handleDeleteService(serviceId: string) {
+    if (!confirm("Tem certeza que deseja excluir este serviço?")) return
+
+    try {
+      const result = await barbershopAPI.deleteService(serviceId)
+      if (result.error) {
+        alert(`Erro ao excluir: ${result.error.message}`)
+        return
+      }
+      await fetchServices()
+    } catch (error) {
+      console.error("Erro ao excluir serviço:", error)
+      alert("Erro ao excluir serviço")
+    }
+  }
     } finally {
       setLoading(false)
     }
@@ -167,7 +255,7 @@ export default function ServicosPage() {
                 {services.length} serviços
               </Badge>
             </div>
-            <Dialog>
+            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
               <DialogTrigger asChild>
                 <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
                   <Plus className="w-4 h-4 mr-2" />
@@ -187,6 +275,8 @@ export default function ServicosPage() {
                     <Input
                       placeholder="Ex: Corte Degrade"
                       className="bg-secondary border-border text-foreground"
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     />
                   </div>
                   <div className="flex flex-col gap-2">
@@ -194,25 +284,46 @@ export default function ServicosPage() {
                     <Input
                       placeholder="Descricao breve do servico"
                       className="bg-secondary border-border text-foreground"
+                      value={formData.description}
+                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="flex flex-col gap-2">
                       <Label className="text-foreground">Preco</Label>
-                      <Input placeholder="R$ 0,00" className="bg-secondary border-border text-foreground" />
+                      <Input
+                        placeholder="R$ 0,00"
+                        className="bg-secondary border-border text-foreground"
+                        value={formData.price}
+                        onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                      />
                     </div>
                     <div className="flex flex-col gap-2">
                       <Label className="text-foreground">Duracao (min)</Label>
-                      <Input type="number" placeholder="45" className="bg-secondary border-border text-foreground" />
+                      <Input
+                        type="number"
+                        placeholder="45"
+                        className="bg-secondary border-border text-foreground"
+                        value={formData.duration}
+                        onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
+                      />
                     </div>
                   </div>
                 </div>
                 <DialogFooter>
-                  <Button variant="secondary" className="bg-secondary text-secondary-foreground">
+                  <Button
+                    variant="secondary"
+                    className="bg-secondary text-secondary-foreground"
+                    onClick={() => setDialogOpen(false)}
+                  >
                     Cancelar
                   </Button>
-                  <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
-                    Salvar
+                  <Button
+                    className="bg-primary text-primary-foreground hover:bg-primary/90"
+                    onClick={handleSaveService}
+                    disabled={saving}
+                  >
+                    {saving ? "Salvando..." : "Salvar"}
                   </Button>
                 </DialogFooter>
               </DialogContent>
@@ -252,7 +363,7 @@ export default function ServicosPage() {
                         <DropdownMenuContent align="end" className="bg-card border-border">
                           <DropdownMenuItem className="text-foreground">Editar</DropdownMenuItem>
                           <DropdownMenuItem className="text-foreground">Duplicar</DropdownMenuItem>
-                          <DropdownMenuItem className="text-destructive">Excluir</DropdownMenuItem>
+                          <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteService(service.id)}>Excluir</DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>

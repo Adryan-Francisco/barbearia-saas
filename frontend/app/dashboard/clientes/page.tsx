@@ -33,7 +33,7 @@ import {
 import { Plus, Search, MoreHorizontal, Phone, Mail, Calendar } from "lucide-react"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { barbershopAPI } from "@/lib/api"
+import { barbershopAPI, authAPI } from "@/lib/api"
 import { useUserRole } from "@/hooks/use-user-role"
 
 interface Client {
@@ -68,6 +68,13 @@ export default function ClientesPage() {
   const [search, setSearch] = useState("")
   const [clients, setClients] = useState<Client[]>([])
   const [loading, setLoading] = useState(true)
+  const [dialogOpen, setDialogOpen] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [clientForm, setClientForm] = useState({
+    name: '',
+    email: '',
+    phone: '',
+  })
   const [stats, setStats] = useState({
     total: 0,
     active: 0,
@@ -155,6 +162,57 @@ export default function ClientesPage() {
     }
   }
 
+  /**
+   * Cadastra um novo cliente no sistema
+   * Cria um usuário com role "client" e senha temporária
+   */
+  async function handleSaveClient() {
+    if (!clientForm.name.trim()) {
+      alert("Nome do cliente é obrigatório")
+      return
+    }
+
+    if (!clientForm.phone.trim()) {
+      alert("Telefone do cliente é obrigatório")
+      return
+    }
+
+    // Formatar telefone - remover caracteres não numéricos
+    const phoneClean = clientForm.phone.replace(/\D/g, '')
+
+    // Gerar senha temporária com os requisitos de segurança
+    const tempPassword = `Barbe@${phoneClean.slice(-4)}!`
+
+    try {
+      setSaving(true)
+      
+      const result = await authAPI.register(
+        clientForm.name.trim(),
+        phoneClean,
+        tempPassword,
+      )
+
+      if (result.error) {
+        alert(`Erro ao cadastrar cliente: ${result.error.message}`)
+        return
+      }
+
+      alert(`Cliente cadastrado com sucesso!\n\nSenha temporária: ${tempPassword}\nInforme ao cliente para alterar a senha no primeiro acesso.`)
+      
+      // Limpar formulário e fechar dialog
+      setClientForm({ name: '', email: '', phone: '' })
+      setDialogOpen(false)
+      
+      // Recarregar clientes
+      await fetchClients()
+    } catch (error) {
+      console.error("Erro ao cadastrar cliente:", error)
+      alert("Erro ao cadastrar cliente. Tente novamente.")
+    } finally {
+      setSaving(false)
+    }
+  }
+
   const filteredClients = clients.filter((c) =>
     c.client_name.toLowerCase().includes(search.toLowerCase()) ||
     c.client_phone.includes(search)
@@ -216,7 +274,7 @@ export default function ClientesPage() {
                 className="pl-9 bg-secondary border-border text-foreground placeholder:text-muted-foreground"
               />
             </div>
-            <Dialog>
+            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
               <DialogTrigger asChild>
                 <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
                   <Plus className="w-4 h-4 mr-2" />
@@ -239,6 +297,8 @@ export default function ClientesPage() {
                       id="name"
                       placeholder="Nome do cliente"
                       className="bg-secondary border-border text-foreground"
+                      value={clientForm.name}
+                      onChange={(e) => setClientForm({ ...clientForm, name: e.target.value })}
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
@@ -251,6 +311,8 @@ export default function ClientesPage() {
                         type="email"
                         placeholder="email@exemplo.com"
                         className="bg-secondary border-border text-foreground"
+                        value={clientForm.email}
+                        onChange={(e) => setClientForm({ ...clientForm, email: e.target.value })}
                       />
                     </div>
                     <div className="flex flex-col gap-2">
@@ -261,16 +323,26 @@ export default function ClientesPage() {
                         id="phone"
                         placeholder="(11) 99999-9999"
                         className="bg-secondary border-border text-foreground"
+                        value={clientForm.phone}
+                        onChange={(e) => setClientForm({ ...clientForm, phone: e.target.value })}
                       />
                     </div>
                   </div>
                 </div>
                 <DialogFooter>
-                  <Button variant="secondary" className="bg-secondary text-secondary-foreground">
+                  <Button
+                    variant="secondary"
+                    className="bg-secondary text-secondary-foreground"
+                    onClick={() => setDialogOpen(false)}
+                  >
                     Cancelar
                   </Button>
-                  <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
-                    Cadastrar
+                  <Button
+                    className="bg-primary text-primary-foreground hover:bg-primary/90"
+                    onClick={handleSaveClient}
+                    disabled={saving}
+                  >
+                    {saving ? "Cadastrando..." : "Cadastrar"}
                   </Button>
                 </DialogFooter>
               </DialogContent>
